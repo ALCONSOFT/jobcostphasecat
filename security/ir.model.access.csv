@@ -1,0 +1,9 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_jobcostphasecat_category_user,jobcostphasecat.category.user,model_project_category,project.group_project_user,1,1,1,1
+access_jobcostphasecat_category_manager,jobcostphasecat.category.manager,model_project_category,project.group_project_manager,1,1,1,1
+access_jobcostphasecat_costtype_user,jobcostphasecat.costtype.user,model_project_costtype,project.group_project_user,1,1,1,1
+access_jobcostphasecat_costtype_manager,jobcostphasecat.costtype.manager,model_project_costtype,project.group_project_manager,1,1,1,1
+access_jobcostphasecat_phaseproject_user,jobcostphasecat.phaseproject.user,model_project_phaseproject,project.group_project_user,1,1,1,1
+access_jobcostphasecat_phaseproject_manager,jobcostphasecat.phaseproject.manager,model_project_phaseproject,project.group_project_manager,1,1,1,1
+access_jobcostphasecat_vsqlcss_user,jobcostphasecat.vsqlcss.user,model_project_vsqlcss,project.group_project_user,1,1,1,1
+access_jobcostphasecat_vsqlcss_manager,jobcostphasecat.vsqlcss.manager,model_project_vsqlcss,project.group_project_manager,1,1,1,1

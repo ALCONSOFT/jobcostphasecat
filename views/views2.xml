@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <data>
+        <record id="view_move_picking_tree_analyt" model="ir.ui.view">
+            <field name="name">stock.move.picking.tree</field>
+            <field name="model">stock.move</field>
+            <field name="inherit_id" ref="stock_analytic.view_move_picking_tree_analyt" />
+                                                
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='analytic_account_id']" position="after">
+                    <field name="category_id" />
+                </xpath>
+            </field>
+        </record>
+        <!-- view_move_picking_tree -->
+        <record id="view_move_tree" model="ir.ui.view">
+            <field name="name">stock.move.tree</field>
+            <field name="model">stock.move</field>
+            <field name="inherit_id" ref="stock_analytic.view_move_tree" />
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='analytic_account_id']" position="after">
+                    <field name="category_id" />
+                </xpath>
+            </field>
+        </record>
+        <record id="view_move_form" model="ir.ui.view">
+            <field name="name">stock.move.form</field>
+            <field name="model">stock.move</field>
+            <field name="inherit_id" ref="stock_analytic.view_move_form" />
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='analytic_account_id']" position="after">
+                    <field name="category_id" />
+                </xpath>
+            </field>
+        </record>
+        <!--
+        <record id="view_jcpc_move_search_analytic" model="ir.ui.view">
+            <field name="name">jcpc.stock.move.search</field>
+            <field name="model">stock.move</field>
+            <field name="inherit_id" ref="stock_analytic.view_move_search_analytic" />
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='analytic_account_id']" position="after">
+                    <field name="category_id" />
+                </xpath>
+                <xpath
+                    expr="//filter[@name='groupby_dest_location_id']"
+                    position="after"
+                >
+                    <filter
+                        string="Categoria"
+                        name="category_id"
+                        context="{'group_by':'category_id'}"
+                        groups="analytic.group_analytic_accounting"
+                    />
+                </xpath>
+            </field>
+        </record>
+        -->
+        <record id="view_picking_form_analytic_jcpc" model="ir.ui.view">
+            <field name="name">stock.picking.form</field>
+            <field name="model">stock.picking</field>
+            <field name="inherit_id" ref="stock_analytic.view_picking_form_analytic" />
+            <field name="arch" type="xml">
+                <xpath
+                    expr="//field[@name='move_ids_without_package']/tree/field[@name='analytic_account_id']"
+                    position="after"
+                >
+                    <field name="category_id" />
+                    <field name="phase_id"/>
+                    
+                </xpath>
+            </field>
+        </record>
+        
+    </data>
+</odoo>
+
+<!--
+    domain= "[('account_analytic_id', '=', 2)]" />
+-->
