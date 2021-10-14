@@ -47,6 +47,7 @@ class JC_vsqlcss(models.Model):
     proyecto = fields.Char(string='Proyecto',readonly=True)
     company_id = fields.Many2one(
         'res.company', string='Company', readonly=True)
+    fecha = fields.Date(string='Fecha', readonly=True)
 
     def init(self):
         tools.drop_view_if_exists(self.env.cr, self._table)
@@ -68,7 +69,8 @@ ptp."name" as fase,
 '1-13-1301-001-001' as cuenta_contable,
 '1' as orden_cambio,
 sm.note as notes,
-1 as company_id
+1 as company_id,
+sm."date" as fecha
 from public.stock_move sm  left join
 public.product_product pp 
 on sm.product_id = pp.id left join 

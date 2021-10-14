@@ -19,7 +19,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Uncategorized',
-    'version': '0.2021-09-13->2021-09-24 22:36',
+    'version': '0.2021-09-13->2021-10-13 22:08',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases','stock_analytic'],
