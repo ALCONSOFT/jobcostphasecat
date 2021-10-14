@@ -56,7 +56,7 @@ sm.name,
 'ZU' as paquete_inventario,
 'CON-000' as documento_inventario,
 row_number() OVER (PARTITION BY true) as linea,
-pt.default_code as articulo,
+pp.default_code as articulo,
 sl2."name" as bodega,
 sm.product_qty as cantidad,
 '~CC~' as ajuste_configurable,
@@ -69,15 +69,15 @@ ptp."name" as fase,
 '1' as orden_cambio,
 sm.note as notes,
 1 as company_id
-from public.stock_move sm  inner join
-public.product_template pt 
-on sm.product_id = pt.id inner join 
+from public.stock_move sm  left join
+public.product_product pp 
+on sm.product_id = pp.id left join 
 stock_location sl 
-on sm.location_id = sl.id inner join 
+on sm.location_id = sl.id left join 
 stock_location sl2
-on sl.location_id = sl2.id inner join
+on sl.location_id = sl2.id left join
 account_analytic_account aaa 
-on sm.analytic_account_id = aaa.id inner join 
+on sm.analytic_account_id = aaa.id left join 
 project_task_phase ptp 
 on sm.phase_id = ptp.id );
         """
