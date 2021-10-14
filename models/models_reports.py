@@ -3,7 +3,7 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
 import datetime
-from datetime import date, time
+from datetime import date, time, timezone
 from odoo import api, fields, models, _, tools
 ##
 from odoo.osv import expression
@@ -47,7 +47,7 @@ class JC_vsqlcss(models.Model):
     proyecto = fields.Char(string='Proyecto',readonly=True)
     company_id = fields.Many2one(
         'res.company', string='Company', readonly=True)
-    fecha = fields.Date(string='Fecha', readonly=True)
+    fecha = fields.Datetime(string='Fecha', readonly=True)
 
     def init(self):
         tools.drop_view_if_exists(self.env.cr, self._table)
@@ -84,3 +84,4 @@ project_task_phase ptp
 on sm.phase_id = ptp.id );
         """
         self.env.cr.execute(query)
+
