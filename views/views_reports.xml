@@ -24,6 +24,11 @@
                 <field name="orden_cambio"/>
                 <field name="notes"/>
                 <field name="company_id"/>
+                <field name="proyecto"/>
+                <field name="bodega_origen"/>
+                <field name="bodega_destino"/>
+                <field name="referencia"/>
+                <field name="tipo_recoleccion"/>
             </tree>
         </field>
         </record>
