@@ -81,14 +81,14 @@
                 >
                     <field name="analytic_tag_ids" string="Etiqueta" widget="many2many_tags" optional="hide"/>
                 </xpath>
-                <!--
+                <!--*-->
                 <xpath
                     expr="//field[@name='move_ids_without_package']/tree/field[@name='analytic_account_id']"
                     position="replace"
                 >
-                    <field name="analytic_account_id" string="Lote"/>
+                    <field name="analytic_account_id" string="Lote" optional="show"/>
                 </xpath>
-                -->
+                
 
             </field>
         </record>
