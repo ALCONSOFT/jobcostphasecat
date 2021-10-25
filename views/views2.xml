@@ -92,7 +92,20 @@
 
             </field>
         </record>
-        
+        <!--lista de phases en la vista: project.phaseproject-->
+        <record id="task_phase_tree_vsql" model="ir.ui.view">
+            <field name="name">project.phaseproject.tree</field>
+            <field name="model">project.phaseproject</field>
+            <field name="arch" type="xml">
+                <tree string="Task Phase">
+                    <field name="name"/>
+                    <field name="notes" string="Nombre Fase"/>
+                    <field name="account_analytic_id" />
+                    <field name="company_id" />
+                </tree>
+            </field>
+        </record>
+
     </data>
 </odoo>
 
