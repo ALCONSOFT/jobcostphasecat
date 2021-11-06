@@ -96,7 +96,7 @@ stock_location slo2
 on slo.location_id = slo2.id left join 
 stock_picking_type spt 
 on sm.picking_type_id = spt.id 
-where NOT(sm.picking_type_id is null )
+where NOT(sm.picking_type_id is null ) and (sm.state='done')
 group by sm."name",
 pp.default_code ,
 sl2."name" ,
