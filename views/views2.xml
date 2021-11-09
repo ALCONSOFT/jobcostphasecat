@@ -88,7 +88,12 @@
                 >
                     <field name="analytic_account_id" string="Lote" optional="show"/>
                 </xpath>
-                
+                <!--partner id obligatorio-->
+                <field name="partner_id"
+                    position="replace"
+                >
+                    <field name="partner_id" required="1" nolabel="1"/>
+                </field>
 
             </field>
         </record>
