@@ -96,6 +96,7 @@ class JC_StockMove(models.Model):
                 return
             else:
                 ca_filtro = self.analytic_account_id
+                self.description_picking += self.phase_id.name
                 print('Filtro: ', ca_filtro)
                 #msg_1 = 'Linea: %d - La Cuenta Analitica seleccioanda: %s no corresponde a la Cuanta Analitica de la Fase seleecionada: %s' % (record, ca_selecc, ca_filtro)
                 #raise exceptions.Warning(msg_1)
