@@ -9,6 +9,7 @@
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='analytic_account_id']" position="after">
                     <field name="category_id" />
+                    <field name="phase_id" optional="show"/>
                 </xpath>
             </field>
         </record>
@@ -20,6 +21,7 @@
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='analytic_account_id']" position="after">
                     <field name="category_id" />
+                    <field name="phase_id" optional="show"/>
                 </xpath>
             </field>
         </record>
@@ -30,6 +32,7 @@
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='analytic_account_id']" position="after">
                     <field name="category_id" />
+                    <field name="phase_id" optional="show"/>
                 </xpath>
             </field>
         </record>
@@ -67,6 +70,7 @@
                 >
                     <field name="category_id" optional="hide"/>
                     <field name="phase_id" optional="show"/>
+                    <field name="old_edition" optional="hide"/>
 
                 </xpath>
                 <xpath

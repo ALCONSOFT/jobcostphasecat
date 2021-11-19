@@ -39,6 +39,27 @@ group by aaa.id, ptp."name", ptp.notes, ptp.company_id);
         """
         self.env.cr.execute(query)
 
+    def name_get(self): 
+        result = [] 
+        for fase in self:
+            if fase.notes == False:
+                lc_fase = "Sin Descripción"
+            else:
+                lc_fase = fase.notes
+            name = '%s {%s}' % (fase.name, ''.join(lc_fase)) 
+            result.append((fase.id, name))
+        return result
+
+    @api.model
+    def _name_search(self, name='', args=None, operator='ilike', limit=100, name_get_uid=None):
+        args = [] if args is None else args.copy() 
+        if not(name == '' and operator == 'ilike'): 
+            args += ['|', '|', 
+                ('name', operator, name), 
+                ('notes', operator, name)
+                  ] 
+        return super()._name_search(name=name, args=args, operator=operator, limit=limit, name_get_uid=name_get_uid)
+
 
 class JC_StockMove(models.Model):
     _inherit = "stock.move"
@@ -70,6 +91,7 @@ class JC_StockMove(models.Model):
                                # Siempre en domain el segundo parametro hace referencia al operador
                                # Siem  pre en domain el tercer paramtro hace referencia una constante o un valor del modelo de la tabla relacionada.
                                )
+    old_edition = fields.Many2one('library.book', string='Old Edition')
     
 #     # ALCONOR: Filtrar la vista: "Fases de Proyecto" por "Cuenta Analítica"; seleccionada en la línea: [project.phaseproject por analytic_account_id]
 #     @api.onchange('analytic_account_id')
@@ -96,7 +118,10 @@ class JC_StockMove(models.Model):
                 return
             else:
                 ca_filtro = self.analytic_account_id
-                self.description_picking += self.phase_id.name
+                if self.description_picking == False:
+                    self.description_picking = self.phase_id.name
+                else:
+                    self.description_picking += self.phase_id.name
                 print('Filtro: ', ca_filtro)
                 #msg_1 = 'Linea: %d - La Cuenta Analitica seleccioanda: %s no corresponde a la Cuanta Analitica de la Fase seleecionada: %s' % (record, ca_selecc, ca_filtro)
                 #raise exceptions.Warning(msg_1)
@@ -138,3 +163,36 @@ class JC_StockMoveLine(models.Model):
 #            if record.phase_id.account_analytic_id == record.analytic_account_id:
 #                raise models.ValidationError(
 #                    'La Cuenta Analítica debe ser la misma Cuenta Analítica de la Fase!')
+
+#############################################################################################
+# Clase ejemplo para agregar busqueda personalizada a una clase
+#############################################################################################
+class LibraryBook(models.Model): 
+    _name = 'library.book' 
+    name = fields.Char('Title') 
+    isbn = fields.Char('ISBN') 
+    author_ids = fields.Many2many("res.partner", String="Authors",tracking=True)
+
+    def name_get(self): 
+        result = [] 
+        for book in self: 
+            authors = book.author_ids.mapped('name') 
+            name = '%s (%s)' % (book.name, ', '.join(authors)) 
+            result.append((book.id, name)) 
+            return result
+# Para poder buscar library.book ya sea por el título del libro, uno de los autores,
+#  o el número ISBN, debe definir el método _name_search () en la clase LibraryBook,
+#  de la siguiente manera:
+@api.model 
+def _name_search(self, name='', args=None, operator='ilike', 
+                limit=100, name_get_uid=None): 
+    args = [] if args is None else args.copy() 
+    if not(name == '' and operator == 'ilike'): 
+        args += ['|', '|', 
+                ('name', operator, name), 
+                ('isbn', operator, name), 
+                ('author_ids.name', operator, name) 
+                  ] 
+    return super(LibraryBook, self)._name_search( 
+         name=name, args=args, operator=operator, 
+         limit=limit, name_get_uid=name_get_uid) 

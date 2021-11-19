@@ -7,3 +7,5 @@ access_jobcostphasecat_phaseproject_user,jobcostphasecat.phaseproject.user,model
 access_jobcostphasecat_phaseproject_manager,jobcostphasecat.phaseproject.manager,model_project_phaseproject,project.group_project_manager,1,1,1,1
 access_jobcostphasecat_vsqlcss_user,jobcostphasecat.vsqlcss.user,model_project_vsqlcss,project.group_project_user,1,1,1,1
 access_jobcostphasecat_vsqlcss_manager,jobcostphasecat.vsqlcss.manager,model_project_vsqlcss,project.group_project_manager,1,1,1,1
+access_jobcostphasecat_librarybook_user,jobcostphasecat.librarybook.user,model_library_book,project.group_project_user,1,1,1,1
+access_jobcostphasecat_librarybook_manager,jobcostphasecat.librarybook.manager,model_library_book,project.group_project_manager,1,1,1,1
