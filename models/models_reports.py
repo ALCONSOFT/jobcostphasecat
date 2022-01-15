@@ -49,6 +49,8 @@ class JC_vsqlcss(models.Model):
     bodega_destino = fields.Char(string='Bodega Destino',readonly=True)
     referencia = fields.Char(string='Ref.',readonly=True)
     tipo_recoleccion = fields.Char(string='Tipo Recoleccion',readonly=True)
+    partner_id = fields.Char(string="Socio", readonly=True)
+    codigo_contratista = fields.Char(string="Codigo Contr.", readonly=True)
 
     def init(self):
         tools.drop_view_if_exists(self.env.cr, self._table)
@@ -76,7 +78,9 @@ pro.name as proyecto,
 sl."complete_name" as bodega_origen,
 slo."complete_name" as bodega_destino,
 sm.reference as referencia,
-spt."name" as tipo_recoleccion
+spt."name" as tipo_recoleccion,
+sp.partner_id as partner_id,
+rp."ref" as codigo_contratista
 from public.stock_move sm  left join
 public.product_product pp 
 on sm.product_id = pp.id left join 
@@ -95,7 +99,11 @@ on sm.location_dest_id = slo.id left join
 stock_location slo2
 on slo.location_id = slo2.id left join 
 stock_picking_type spt 
-on sm.picking_type_id = spt.id 
+on sm.picking_type_id = spt.id left join 
+stock_picking sp
+on sm.picking_id = sp.id left join 
+res_partner rp 
+on sp.partner_id = rp.id 
 where NOT(sm.picking_type_id is null ) and (sm.state='done')
 group by sm."name",
 pp.default_code ,
@@ -112,7 +120,10 @@ slo2."name",
 sm.reference ,
 spt."name",
 sl.complete_name,
-slo.complete_name );
+slo.complete_name,
+sp.partner_id,
+rp."ref"
+order by sm."date" );
         """
         self.env.cr.execute(query)
 

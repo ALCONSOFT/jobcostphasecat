@@ -60,6 +60,11 @@ group by aaa.id, ptp."name", ptp.notes, ptp.company_id);
                   ] 
         return super()._name_search(name=name, args=args, operator=operator, limit=limit, name_get_uid=name_get_uid)
 
+#"Alconor: En construccion; 15-ene-2022"
+#class JC_StockPicking():
+#    _inherit = "stock.picking"
+#
+#    account_analytic_id = 
 
 class JC_StockMove(models.Model):
     _inherit = "stock.move"

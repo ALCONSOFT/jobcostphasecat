@@ -29,6 +29,8 @@
                 <field name="bodega_destino"/>
                 <field name="referencia"/>
                 <field name="tipo_recoleccion"/>
+                <field name="partner_id"/>
+                <field name="codigo_contratista"/>
             </tree>
         </field>
         </record>
