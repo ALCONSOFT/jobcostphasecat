@@ -54,7 +54,7 @@ class JC_vsqlcss(models.Model):
 
     def init(self):
         tools.drop_view_if_exists(self.env.cr, self._table)
-        query = """CREATE OR REPLACE VIEW project_vsqlcss AS ( select row_number() OVER (PARTITION BY true) as id,
+        query = """CREATE OR REPLACE VIEW project_vsqlcss AS (  select row_number() OVER (PARTITION BY true) as id,
 True as active,
 sm.name, 
 'ZU' as paquete_inventario,
@@ -73,7 +73,7 @@ ptp."name" as fase,
 '1' as orden_cambio,
 sm.note as notes,
 1 as company_id,
-sm."date" as fecha,
+sp.date_done as fecha,
 pro.name as proyecto,
 sl."complete_name" as bodega_origen,
 slo."complete_name" as bodega_destino,
@@ -112,7 +112,7 @@ sm.product_qty ,
 aaa.code ,
 ptp.name,
 sm.note ,
-sm."date" ,
+sp."date_done" ,
 pro."name" ,
 sm.location_dest_id ,
 sm.picking_type_id ,
@@ -123,7 +123,7 @@ sl.complete_name,
 slo.complete_name,
 sp.partner_id,
 rp."ref"
-order by sm."date" );
+order by sp."date_done" );
         """
         self.env.cr.execute(query)
 
