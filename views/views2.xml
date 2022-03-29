@@ -77,6 +77,9 @@
                     expr="//header" position="inside"
                 >
                     <widget name="signature" string="Firma Devol."/>
+                    <!--
+                    <button name="action_confirm_jc" attrs="{'invisible': [('show_mark_as_todo', '=', False)]}" string="Mark as Todo" type="object" class="oe_highlight" groups="base.group_user"/>
+                    -->
                 </xpath>
                 
                 <xpath
@@ -97,6 +100,11 @@
                     position="replace"
                 >
                     <field name="partner_id" required="1" nolabel="1"/>
+                </field>
+                <!--Agregando campo [full_analytic_account_id]-->
+                <field name="backorder_id"
+                    position="before">
+                        <field name="full_analytic_account_id" string="Imputar todo al Lote:"/>
                 </field>
 
             </field>
