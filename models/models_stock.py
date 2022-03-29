@@ -11,7 +11,7 @@ from odoo.tools import DEFAULT_SERVER_DATETIME_FORMAT
 from odoo.tools.float_utils import float_is_zero
 from odoo.exceptions import AccessError, UserError, ValidationError, ValidationError, Warning, RedirectWarning
 from odoo.tools.misc import formatLang, get_lang
-from openerp import exceptions
+#from openerp import exceptions
 #import logging
 ##
 
@@ -61,10 +61,13 @@ group by aaa.id, ptp."name", ptp.notes, ptp.company_id);
         return super()._name_search(name=name, args=args, operator=operator, limit=limit, name_get_uid=name_get_uid)
 
 #"Alconor: En construccion; 15-ene-2022"
-#class JC_StockPicking():
-#    _inherit = "stock.picking"
-#
-#    account_analytic_id = 
+class JC_StockPicking():
+    _inherit = "stock.picking"
+
+    full_analytic_account_id = fields.Many2one(
+        string="Al Lote Completo", comodel_name="account.analytic.account", help="Se refiere a si todos los items corresponden al mismo lote!"
+    )
+
 
 class JC_StockMove(models.Model):
     _inherit = "stock.move"

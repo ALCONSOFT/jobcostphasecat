@@ -10,6 +10,7 @@
         - Herencia de Fases y Categorías en Operaciones Inventario
             - stock.picking, stock.move, stock.move.line
             - Basarse en modulo: stock_analytic: cuenta analítica modulo de Inventario.
+            - Agregando por codigo validación de fecha de cierre [close_date]
     """,
 
     'author': "Alconsoft",
@@ -19,7 +20,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Uncategorized',
-    'version': '0.2021-09-13->2022-01-15 07:00',
+    'version': '0.2021-09-13->2022-02-09 07:00',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases','stock_analytic'],
