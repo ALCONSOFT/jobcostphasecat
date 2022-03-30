@@ -82,7 +82,7 @@
                     <button name="action_confirm_jc" string="Mark as Todo" type="object" class="oe_highlight" groups="base.group_user"/>
                     -->
 
-                    <button name="ver_detalles" string="Refrescar Detalles" type="object"/>
+                    <button name="ver_detalles" string="Cambiar Lote" type="object"/>
                     
                 </xpath>
                 

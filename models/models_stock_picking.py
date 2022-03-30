@@ -32,38 +32,69 @@ class JC_StockPicking(models.Model):
             raise UserError(message.lstrip())
         else:
             return
+    # Alconor: 30-mar-2022; validacion de control lote: full_analytic_account_id
+    @api.constrains('full_analytic_accoount_id')
+    def _check_fanalytic(self):
+        if (not self.id.origin):
+            return {'warning': {
+                'title': "Intenta cambiar el lote; pero no ha guardado aún!.",
+                'message': "Intenta cambiar el lote; pero no ha guardado aún!.  " +
+                "Si es una tranferencia nueva debe guardar primero y dejar en modo Borrador. "
+                "Para poder realizar cambio del lote o proyecto!!!",
+            }
+        }
+        else:
+            print('Validando en Full_analytic_accoount_id')
+            return
+
     # Alconor: 23-mar-2022; crear una función que sustituya todos los lotes del detalle: (stock.move) por el lote del encabezado
     #          (stock.picking) full_account_analytic_id usando el decorador onchange [en cambio de:]
-    @api.onchange('full_analytic_account_id')
-    def _onchange_fanalytic(self):
-        # modelo_encabezado = self
-        # recorrer el modelo: stock.move registro por registro
-        # modelo_detalle = self.env['stock.move'].search(['self.id', '=', 'picking_id'])
-        print('------------------------------ANALIZANDO-------------------------------------')
-        print(self.id)
+    # @api.onchange('full_analytic_account_id')
+    # def _onchange_fanalytic(self):
+    #     print('------------------------------ANALIZANDO-------------------------------------')
+    #     print(self.id)
+    #     modelo_detalle = self.env['stock.move'].search([('picking_id', '=', self.ids)])
+    #     # Consultar si se ha asignado el lote en el modelo
+    #     self.ids
+    #     # Solo se puede usar este control si ya se guardo la transferencia nueva!
+    #     # si origin es un entero enteonces se puede hacer el cambio de lote o proyecto!
+    #     if not self.full_analytic_account_id:
+    #         return
+    #     else:
+    #         # validar si ya es un documento guardado? y en modo Borrador
+    #         if (not self.id.origin):
+    #             return {'warning': {
+    #                 'title': "Intenta cambiar el lote; pero no ha guardado aún!.",
+    #                 'message': "Intenta cambiar el lote; pero no ha guardado aún!.  " +
+    #                 "Si es una tranferencia nueva debe guardar primero y dejar en modo Borrador. "
+    #                 "Para poder realizar cambio del lote o proyecto!!!",
+    #             }
+    #         }
+
+    #             #res = { "type": "ir.actions.client", "tag": "reload" }
+    #     alerta = {'warning': {
+    #             'title': "Ha cambiado el Lote para todas las lineas del Documento.",
+    #              'message': "Ha cambiado el Lote para todas las lineas del Documento.  " +
+    #              "Haga click en botón: Refrescar Detalles ó "
+    #              "Por favor guarde el Documento para ver los cambios y vuelva a Editar si desea realizar otros cambios!!!",
+    #         }
+    #     }
+    #     #self.ver_detalles
+    #     return alerta
+
+        # 24-mar-2022; Como refrescar la vista formularios desde el modelo?
+    # 23-mar-2022
+    def ver_detalles(self):
+        # Iniciar ciclo para cambiar lote linea por linea del Detalle
         modelo_detalle = self.env['stock.move'].search([('picking_id', '=', self.ids)])
-        # self = modelo_detalle
         for record in modelo_detalle:
             print(record.analytic_account_id) 
             record.analytic_account_id = self.full_analytic_account_id
             print('Linea: ***************')
             print(record.analytic_account_id)
-            #res = { "type": "ir.actions.client", "tag": "reload" }
-        alerta = {'warning': {
-                'title': "Ha cambiado el Lote para todas las lineas del Documento.",
-                 'message': "Ha cambiado el Lote para todas las lineas del Documento.  " +
-                 "Haga click en botón: Refrescar Detalles ó"
-                 "Por favor guarde el Documento para ver los cambios y vuelva a Editar si desea realizar otros cambios!!!",
-            }
-        }
-        self.ver_detalles
-        return alerta
 
-        # 24-mar-2022; Como refrescar la vista formularios desde el modelo?
-    # 23-mar-2022
-    def ver_detalles(self):
-        message = _('refrescando detalles  !!!')
-        raise UserError(message.lstrip())
+        #message = _('refrescando detalles  !!!')
+        #raise UserError(message.lstrip())
 
 
 
