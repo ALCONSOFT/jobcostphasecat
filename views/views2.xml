@@ -33,6 +33,7 @@
                 <xpath expr="//field[@name='analytic_account_id']" position="after">
                     <field name="category_id" />
                     <field name="phase_id" optional="show"/>
+                    
                 </xpath>
             </field>
         </record>
@@ -78,8 +79,11 @@
                 >
                     <widget name="signature" string="Firma Devol."/>
                     <!--
-                    <button name="action_confirm_jc" attrs="{'invisible': [('show_mark_as_todo', '=', False)]}" string="Mark as Todo" type="object" class="oe_highlight" groups="base.group_user"/>
+                    <button name="action_confirm_jc" string="Mark as Todo" type="object" class="oe_highlight" groups="base.group_user"/>
                     -->
+
+                    <button name="ver_detalles" string="Refrescar Detalles" type="object"/>
+                    
                 </xpath>
                 
                 <xpath
@@ -122,6 +126,28 @@
                 </tree>
             </field>
         </record>
+        <!--Form de Alerta: Desarrollado para refrescar el form de stock picking -->
+        <record id="view_stock_mensaje" model="ir.ui.view">
+            <field name="name">stock.mensaje.form</field>
+            <field name="model">stock.mensaje</field>
+            <field name="arch" type="xml">
+                <form string="Books">
+                    <field name="name"/>
+                    <field name="descripcion" string="Mensaje"/>
+                </form>
+            </field>
+        </record>
+        <!--ACCION DE VENTANA: stock.mensaje-->
+    <record model="ir.actions.act_window" id="jobcostphasecat.action_windows_stock_mensaje">
+      <field name="name">Mensaje de Alerta de Stock</field>
+      <field name="res_model">stock.mensaje</field>
+      <field name="view_mode">tree,form</field>
+    </record>
+
+    <!--ELEMENTO DE MENU: Lista de Closed Date-->
+    <menuitem name="Mensaje de Alerta" id="jobcostphasecat.menu_stock_mensaje" parent="bi_odoo_project_phases.menu_project_phases"
+              action="jobcostphasecat.action_windows_stock_mensaje"/>              
+
 
     </data>
 </odoo>

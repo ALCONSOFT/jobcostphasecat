@@ -4,3 +4,4 @@
 from . import models
 from . import models_stock
 from . import models_reports
+from . import models_stock_picking

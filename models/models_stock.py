@@ -60,15 +60,6 @@ group by aaa.id, ptp."name", ptp.notes, ptp.company_id);
                   ] 
         return super()._name_search(name=name, args=args, operator=operator, limit=limit, name_get_uid=name_get_uid)
 
-#"Alconor: En construccion; 15-ene-2022"
-class JC_StockPicking():
-    _inherit = "stock.picking"
-
-    full_analytic_account_id = fields.Many2one(
-        string="Al Lote Completo", comodel_name="account.analytic.account", help="Se refiere a si todos los items corresponden al mismo lote!"
-    )
-
-
 class JC_StockMove(models.Model):
     _inherit = "stock.move"
 
@@ -97,7 +88,7 @@ class JC_StockMove(models.Model):
                                #  analytic_account_id : es el campo relacionado many2one del modelo o vista relacionado.
                                # Siempre en domain el primer parametro hace referencia al modelo actual
                                # Siempre en domain el segundo parametro hace referencia al operador
-                               # Siem  pre en domain el tercer paramtro hace referencia una constante o un valor del modelo de la tabla relacionada.
+                               # Siempre en domain el tercer parametro hace referencia una constante o un valor del modelo de la tabla relacionada.
                                )
     old_edition = fields.Many2one('library.book', string='Old Edition')
     
@@ -136,9 +127,17 @@ class JC_StockMove(models.Model):
 
     @api.onchange('analytic_account_id')
     def onchange_aaid(self):
-        print('Entrando a funcion: onchange_aaid')
+         
         for record in self:
             if not self.analytic_account_id:
+                # Alconor: 22-mar-2022
+                self.analytic_account_id = self.env['stock.picking'].browse(self.picking_id.full_analytic_account_id).id
+                # self: hace referenca al modelo actual en el que se esta apuntando.
+                # env: hace referencia al Enviroment o Entorno; por el cual se puede localizar cualquier otro modelo
+                # modelo: clases de python que en odoo se usan para acceeder a los registros de bases de datos o funciones
+                # browse: visor o examinador que permite hacer referencia campo o field del modelo que se requiere
+                #         dentro del browse siempre el parametro sera un id, que es la fila del registro en cuestión.
+                # 22-mar-2022
                 return
             else:
                 ln_aaid = self.analytic_account_id

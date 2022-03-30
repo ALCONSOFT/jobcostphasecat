@@ -20,7 +20,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Uncategorized',
-    'version': '0.2021-09-13->2022-02-09 07:00',
+    'version': '0.2021-09-13->2022-02-11 07:00',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases','stock_analytic'],
@@ -34,6 +34,7 @@
         'views/views2.xml',
         'views/views_categories.xml',
         'views/views_reports.xml',
+        'views/view_picking.xml',
         'static/xls/project.costtype.csv',
         'static/xls/project.category.csv',
         ###############################
