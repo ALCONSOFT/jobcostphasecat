@@ -19,8 +19,8 @@
     </record>
 
     <!--ELEMENTO DE MENU: Lista de Closed Date-->
-    <menuitem name="Fecha Cierre Trasnferencia" id="jobcostphasecat.menu_closed_date" parent="bi_odoo_project_phases.menu_project_phases"
-              action="jobcostphasecat.action_windows_closed_date"/>              
+    <menuitem name="Fecha Cierre Transferencia" id="jobcostphasecat.menu_closed_date" parent="bi_odoo_project_phases.menu_project_phases"
+              action="jobcostphasecat.action_windows_closed_date"/>
 
     </data>
 </odoo>
