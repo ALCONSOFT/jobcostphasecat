@@ -13,6 +13,21 @@
                 </xpath>
             </field>
         </record>
+        <!--Agrenganfo lote a la lista arbol-->
+        <record model="ir.ui.view" id="view_vpicktree_jc">
+            <field name="name">stock.picking.tree</field>
+            <field name="model">stock.picking</field>
+            <field name="inherit_id" ref="stock.vpicktree"/>
+
+            <field name="arch" type="xml">
+                <!--*-->
+                <field name="note" position="before">
+                    <field name="full_analytic_account_id" string="Lote" optional="show"/>
+                </field>
+                
+            </field>
+        </record>
+
         <!-- view_move_picking_tree -->
         <record id="view_move_tree" model="ir.ui.view">
             <field name="name">stock.move.tree</field>
@@ -60,6 +75,7 @@
             </field>
         </record>
         -->
+
         <record id="view_picking_form_analytic_jcpc" model="ir.ui.view">
             <field name="name">stock.picking.form</field>
             <field name="model">stock.picking</field>
