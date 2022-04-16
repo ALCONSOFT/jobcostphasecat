@@ -61,8 +61,18 @@ sm.name,
 'CON-000' as documento_inventario,
 row_number() OVER (PARTITION BY true) as linea,
 pp.default_code as articulo,
-case when position('OUT' in sm.reference) > 0 then sl2."name" when position('DEV' in sm.reference) > 0 then slo2."name" else '' end  as bodega,
-sm.product_qty*(case when position('OUT' in sm.reference) > 0 then +1 when position('DEV' in sm.reference) > 0 then -1 else 0 end) as cantidad,
+case
+ when position('OUT' in sm.reference) > 0 then sl2."name"
+ when position('DEV' in sm.reference) > 0 then slo2."name"
+ when position('DES' in sm.reference) > 0 then sl2."name"
+ else ''
+end  as bodega,
+sm.product_qty*(case 
+ when position('OUT' in sm.reference) > 0 then +1
+ when position('DEV' in sm.reference) > 0 then -1
+ when position('DES' in sm.reference) > 0 then -1
+ else 0
+end ) as cantidad,
 '~CC~' as ajuste_configurable,
 'C' as tipo,
 'D' as subtipo,
