@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <data>
+        <record id="view_move_picking_tree_analyt" model="ir.ui.view">
+            <field name="name">stock.move.picking.tree</field>
+            <field name="model">stock.move</field>
+            <field name="inherit_id" ref="stock_analytic.view_move_picking_tree_analyt" />
+                                                
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='analytic_account_id']" position="after">
+                    <field name="category_id" />
+                    <field name="phase_id" optional="show"/>
+                </xpath>
+            </field>
+        </record>
+        <!--Agrenganfo lote a la lista arbol-->
+        <record model="ir.ui.view" id="view_vpicktree_jc">
+            <field name="name">stock.picking.tree</field>
+            <field name="model">stock.picking</field>
+            <field name="inherit_id" ref="stock.vpicktree"/>
+
+            <field name="arch" type="xml">
+                <!--*-->
+                <field name="note" position="before">
+                    <field name="full_analytic_account_id" string="Lote" optional="show"/>
+                </field>
+                
+            </field>
+        </record>
+
+        <!-- view_move_picking_tree -->
+        <record id="view_move_tree" model="ir.ui.view">
+            <field name="name">stock.move.tree</field>
+            <field name="model">stock.move</field>
+            <field name="inherit_id" ref="stock_analytic.view_move_tree" />
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='analytic_account_id']" position="after">
+                    <field name="category_id" />
+                    <field name="phase_id" optional="show"/>
+                </xpath>
+            </field>
+        </record>
+        <record id="view_move_form" model="ir.ui.view">
+            <field name="name">stock.move.form</field>
+            <field name="model">stock.move</field>
+            <field name="inherit_id" ref="stock_analytic.view_move_form" />
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='analytic_account_id']" position="after">
+                    <field name="category_id" />
+                    <field name="phase_id" optional="show"/>
+                    
+                </xpath>
+            </field>
+        </record>
+        <!--
+        <record id="view_jcpc_move_search_analytic" model="ir.ui.view">
+            <field name="name">jcpc.stock.move.search</field>
+            <field name="model">stock.move</field>
+            <field name="inherit_id" ref="stock_analytic.view_move_search_analytic" />
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='analytic_account_id']" position="after">
+                    <field name="category_id" />
+                </xpath>
+                <xpath
+                    expr="//filter[@name='groupby_dest_location_id']"
+                    position="after"
+                >
+                    <filter
+                        string="Categoria"
+                        name="category_id"
+                        context="{'group_by':'category_id'}"
+                        groups="analytic.group_analytic_accounting"
+                    />
+                </xpath>
+            </field>
+        </record>
+        -->
+
+        <record id="view_picking_form_analytic_jcpc" model="ir.ui.view">
+            <field name="name">stock.picking.form</field>
+            <field name="model">stock.picking</field>
+            <field name="inherit_id" ref="stock_analytic.view_picking_form_analytic" />
+            <field name="arch" type="xml">
+                <xpath
+                    expr="//field[@name='move_ids_without_package']/tree/field[@name='analytic_account_id']"
+                    position="after"
+                >
+                    <field name="category_id" optional="hide"/>
+                    <field name="phase_id" optional="show"/>
+                    <field name="old_edition" optional="hide"/>
+
+                </xpath>
+                <xpath
+                    expr="//header" position="inside"
+                >
+                    <widget name="signature" string="Firma Devol."/>
+                    <!--
+                    <button name="action_confirm_jc" string="Mark as Todo" type="object" class="oe_highlight" groups="base.group_user"/>
+                    -->
+
+                    <button name="ver_detalles" string="Cambiar Lote" type="object"/>
+                    
+                </xpath>
+                
+                <xpath
+                    expr="//field[@name='move_ids_without_package']/tree/field[@name='analytic_tag_ids']"
+                    position="replace"
+                >
+                    <field name="analytic_tag_ids" string="Etiqueta" widget="many2many_tags" optional="hide"/>
+                </xpath>
+                <!--*-->
+                <xpath
+                    expr="//field[@name='move_ids_without_package']/tree/field[@name='analytic_account_id']"
+                    position="replace"
+                >
+                    <field name="analytic_account_id" string="Lote" optional="show"/>
+                </xpath>
+                <!--partner id obligatorio-->
+                <field name="partner_id"
+                    position="replace"
+                >
+                    <field name="partner_id" required="1" nolabel="1"/>
+                </field>
+                <!--Agregando campo [full_analytic_account_id]-->
+                <field name="backorder_id"
+                    position="before">
+                        <field name="full_analytic_account_id" string="Imputar todo al Lote:"/>
+                </field>
+
+            </field>
+        </record>
+        <!--lista de phases en la vista: project.phaseproject-->
+        <record id="task_phase_tree_vsql" model="ir.ui.view">
+            <field name="name">project.phaseproject.tree</field>
+            <field name="model">project.phaseproject</field>
+            <field name="arch" type="xml">
+                <tree string="Task Phase">
+                    <field name="name"/>
+                    <field name="notes" string="Nombre Fase"/>
+                    <field name="account_analytic_id" />
+                    <field name="company_id" />
+                </tree>
+            </field>
+        </record>
+        <!--Form de Alerta: Desarrollado para refrescar el form de stock picking -->
+        <record id="view_stock_mensaje" model="ir.ui.view">
+            <field name="name">stock.mensaje.form</field>
+            <field name="model">stock.mensaje</field>
+            <field name="arch" type="xml">
+                <form string="Books">
+                    <field name="name"/>
+                    <field name="descripcion" string="Mensaje"/>
+                </form>
+            </field>
+        </record>
+        <!--ACCION DE VENTANA: stock.mensaje-->
+    <record model="ir.actions.act_window" id="jobcostphasecat.action_windows_stock_mensaje">
+      <field name="name">Mensaje de Alerta de Stock</field>
+      <field name="res_model">stock.mensaje</field>
+      <field name="view_mode">tree,form</field>
+    </record>
+
+    <!--ELEMENTO DE MENU: Lista de Closed Date-->
+    <menuitem name="Mensaje de Alerta" id="jobcostphasecat.menu_stock_mensaje" parent="bi_odoo_project_phases.menu_project_phases"
+              action="jobcostphasecat.action_windows_stock_mensaje"/>              
+
+
+    </data>
+</odoo>
+
+<!--
+    domain= "[('account_analytic_id', '=', 2)]" />
+-->
