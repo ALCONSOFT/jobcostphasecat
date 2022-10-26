@@ -21,7 +21,7 @@
 
             <field name="arch" type="xml">
                 <!--*-->
-                <field name="note" position="before">
+                <field name="json_popover" position="before">
                     <field name="full_analytic_account_id" string="Lote" optional="show"/>
                 </field>
                 
