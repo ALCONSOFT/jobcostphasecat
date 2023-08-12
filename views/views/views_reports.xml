@@ -1,0 +1,54 @@
+<odoo>
+    <data>
+        <!--tree o list-->
+        <record model="ir.ui.view" id="jobcostphasecat.vsqlcss">
+        <field name="name">Lista Reporte de Proyectos - Carga de Salidas de Almacen</field>
+        <field name="model">project.vsqlcss</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="fecha"/>
+                <field name="paquete_inventario"/>
+                <field name="documento_inventario"/>
+                <field name="linea"/>
+                <field name="articulo"/>
+                <field name="bodega"/>
+                <field name="cantidad"/>
+                <field name="unidad_de_medida"/>
+                <field name="ajuste_configurable"/>
+                <field name="tipo"/>
+                <field name="subtipo"/>
+                <field name="subsubtipo"/>
+                <field name="centro_costo"/>
+                <field name="fase"/>
+                <field name="cuenta_contable"/>
+                <field name="orden_cambio"/>
+                <field name="notes"/>
+                <field name="company_id"/>
+                <field name="proyecto"/>
+                <field name="bodega_origen"/>
+                <field name="bodega_destino"/>
+                <field name="referencia"/>
+                <field name="tipo_recoleccion"/>
+                <field name="partner_id"/>
+                <field name="codigo_contratista"/>
+            </tree>
+        </field>
+        </record>
+
+        <!--acccion de ventana: -->
+        <record id="action_reportes_project" model="ir.actions.act_window">
+            <field name="name">Accion Reportes Proyecto</field>
+            <field name="res_model">project.vsqlcss</field>
+            <field name="view_mode">tree,form</field>
+        </record>       
+        <!--menu del nivel superior-->
+        <menuitem id="menu_reportes_project"
+            name="Menu Reportes de Proyectos"/>
+        <!--menu de reporte vsqlcss [Vista SQL carga de salidas de softland]-->
+        <menuitem id="menu_reporte_project_vsqlcss"
+            name="Menu Vista SQL Cargador de Salidas de Almacen->Softland"
+            parent="menu_reportes_project"
+            action="action_reportes_project"/>
+    </data>
+</odoo>
