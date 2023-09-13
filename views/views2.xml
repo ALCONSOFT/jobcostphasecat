@@ -20,7 +20,7 @@
             <field name="inherit_id" ref="stock.vpicktree"/>
 
             <field name="arch" type="xml">
-                <!--*-->
+                <!--*ojo-->
                 <field name="json_popover" position="before">
                     <field name="full_analytic_account_id" string="Lote" optional="show"/>
                 </field>
@@ -126,6 +126,13 @@
                     position="before">
                         <field name="full_analytic_account_id" string="Imputar todo al Lote:"/>
                 </field>
+                <!--Agregando nueva pestaña-->
+                <xpath expr="//notebook" position="inside">
+                    <page string="Mano de Obra">
+                        <!-- Aquí puedes agregar los campos y elementos que quieras en esta pestaña -->
+                        <field name="actividades_id"></field>
+                    </page>
+                </xpath>
 
             </field>
         </record>
