@@ -1,6 +1,0 @@
-id,name,active,code_cost_type
-101,MATERIALES,true,MA
-102,MANO DE OBRA,true,MO
-103,EQUIPOS,true,EQ
-104,GASTOS,true,GA
-105,CONTRATOS,true,CO

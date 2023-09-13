@@ -52,9 +52,9 @@ class JC_vsqlcss(models.Model):
     partner_id = fields.Char(string="Socio", readonly=True)
     codigo_contratista = fields.Char(string="Codigo Contr.", readonly=True)
 
-    def init(self):
+    def init(self, filter_date=None):
         tools.drop_view_if_exists(self.env.cr, self._table)
-        query = """CREATE OR REPLACE VIEW project_vsqlcss AS (  select row_number() OVER (PARTITION BY true) as id,
+        query1 = """CREATE OR REPLACE VIEW project_vsqlcss AS (  select row_number() OVER (PARTITION BY true) as id,
 True as active,
 sm.name, 
 'ZU' as paquete_inventario,
@@ -115,7 +115,9 @@ on sm.picking_id = sp.id left join
 res_partner rp 
 on sp.partner_id = rp.id 
 where NOT(sm.picking_type_id is null ) and (sm.state='done')
-group by sm."name",
+"""
+        query2 = """ AND sp.date_done::timestamp::date = %s"""
+        query3 = """ group by sm."name",
 pp.default_code ,
 sl2."name" ,
 sm.product_qty ,
@@ -135,5 +137,11 @@ sp.partner_id,
 rp."ref"
 order by sp."date_done" );
         """
-        self.env.cr.execute(query)
-
+        if not filter_date:
+            query = query1 + query3
+            self.env.cr.execute(query)
+        else:
+            query = query1 + query2 + query3
+            self.env.cr.execute(query, (filter_date,))
+            #self.env.cr.execute(query1+query3)
+        print(query)
