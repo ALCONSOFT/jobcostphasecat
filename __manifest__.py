@@ -20,7 +20,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '0.2021-09-13->2023-08-11 21:00',
+    'version': '15.2023-09-25',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases','stock_analytic'],
@@ -40,10 +40,9 @@
         ###############################
     ],
     # only loaded in demonstration mode
-    'demo': [
-        'demo/demo.xml',
-
-    ],
+    #'demo': [
+    #    'demo/demo.xml',
+    #],
     # Aplicacion:  si aparace cierto (true) esta modulo sera una aplicacion que aprecera en el listado de aplicaciones de odoo.
     'application': True,
 }

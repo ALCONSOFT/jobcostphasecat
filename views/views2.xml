@@ -4,7 +4,7 @@
         <record id="view_move_picking_tree_analyt" model="ir.ui.view">
             <field name="name">stock.move.picking.tree</field>
             <field name="model">stock.move</field>
-            <field name="inherit_id" ref="stock_analytic.view_move_picking_tree_analyt" />
+            <field name="inherit_id" ref="stock_analytic.view_picking_move_tree" />
                                                 
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='analytic_account_id']" position="after">
@@ -13,7 +13,7 @@
                 </xpath>
             </field>
         </record>
-        <!--Agrenganfo lote a la lista arbol-->
+        <!--Agrenganfo proyecto a la lista arbol-->
         <record model="ir.ui.view" id="view_vpicktree_jc">
             <field name="name">stock.picking.tree</field>
             <field name="model">stock.picking</field>
@@ -22,7 +22,7 @@
             <field name="arch" type="xml">
                 <!--*ojo-->
                 <field name="json_popover" position="before">
-                    <field name="full_analytic_account_id" string="Lote" optional="show"/>
+                    <field name="full_analytic_account_id" string="Proyecto" optional="show"/>
                 </field>
                 
             </field>
@@ -98,7 +98,7 @@
                     <button name="action_confirm_jc" string="Mark as Todo" type="object" class="oe_highlight" groups="base.group_user"/>
                     -->
 
-                    <button name="ver_detalles" string="Cambiar Lote" type="object"/>
+                    <button name="ver_detalles" string="Cambiar Proyecto" type="object"/>
                     
                 </xpath>
                 
@@ -124,7 +124,7 @@
                 <!--Agregando campo [full_analytic_account_id]-->
                 <field name="backorder_id"
                     position="before">
-                        <field name="full_analytic_account_id" string="Imputar todo al Lote:"/>
+                        <field name="full_analytic_account_id" string="Imputar todo al Proyecto:"/>
                 </field>
                 <!--Agregando nueva pestaña-->
                 <xpath expr="//notebook" position="inside">

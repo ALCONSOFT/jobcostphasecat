@@ -77,6 +77,7 @@ class JC_StockMove(models.Model):
                 print('dominio: con filtro:', domain)
             return domain
 
+    note = fields.Text(string='Notes', readonly=True)
     category_id = fields.Many2one(
         "project.category", string="Categoria", tracking=True)
     phase_id = fields.Many2one("project.phaseproject",

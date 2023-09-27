@@ -18,7 +18,7 @@ class JC_StockPicking(models.Model):
     _inherit = "stock.picking"
 
     full_analytic_account_id = fields.Many2one(
-        string="Al Lote Completo", comodel_name="account.analytic.account", help="Se refiere a si todos los productos corresponden al mismo lote!"
+        string="Al Proyecto Completo", comodel_name="account.analytic.account", help="Se refiere a si todos los productos corresponden al mismo lote!"
     )
     actividades_id = fields.Many2one("account.analytic.line", string="Tareas", tracking=True)
     def action_confirm_jc(self):
@@ -33,7 +33,7 @@ class JC_StockPicking(models.Model):
             raise UserError(message.lstrip())
         else:
             return
-    # Alconor: 30-mar-2022; validacion de control lote: full_analytic_account_id
+    # Alconor: 30-mar-2022; validacion de control proyecto: full_analytic_account_id
     @api.constrains('full_analytic_accoount_id')
     def _check_fanalytic(self):
         if (not self.id.origin):
