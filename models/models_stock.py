@@ -22,7 +22,7 @@ class JC_PhaseProject(models.Model):
 
     name = fields.Char(string='Phase Name', readonly=True)
     account_analytic_id = fields.Many2one(
-        'account_analytic_account', readonly=True, string='Cuenta Analítica')
+        'account.analytic.account', readonly=True, string='Cuenta Analítica')
     notes = fields.Text(string='Notes', readonly=True)
     company_id = fields.Many2one(
         'res.company', string='Company', readonly=True)
@@ -52,6 +52,14 @@ group by aaa.id, ptp."name", ptp.notes, ptp.company_id);
 
     @api.model
     def _name_search(self, name='', args=None, operator='ilike', limit=100, name_get_uid=None):
+        '''# Accediendo al diccionario en la tercera posición de la lista (índice 2)
+        diccionario0 = args[0][0]
+        diccionario1 = args[0][1]
+        diccionario2 = args[0][2]
+        # Obtener el primer elemento (clave y valor)
+        clave, valor = next(iter(diccionario2.items()))
+        nargs = [[diccionario0, diccionario1, clave]]
+        '''
         args = [] if args is None else args.copy() 
         if not(name == '' and operator == 'ilike'): 
             args += ['|', '|', 
@@ -77,12 +85,14 @@ class JC_StockMove(models.Model):
                 print('dominio: con filtro:', domain)
             return domain
 
+    account_analytic_id = fields.Many2one('account.analytic.account', readonly=True, string='Cuenta Analítica')
+
     category_id = fields.Many2one(
         "project.category", string="Categoria", tracking=True)
     phase_id = fields.Many2one("project.phaseproject",
                                string="Fase",
                                tracking=True,
-                               domain="[('account_analytic_id', '=', analytic_account_id)]"
+                               domain="[('account_analytic_id', '=', account_analytic_id)]"
                                # Alconor: 2021-09-29: aclaración importante del uso de parametro: domain
                                # 'account_analytic_id': es el campo del modelo actual
                                #  analytic_account_id : es el campo relacionado many2one del modelo o vista relacionado.
@@ -90,28 +100,11 @@ class JC_StockMove(models.Model):
                                # Siempre en domain el segundo parametro hace referencia al operador
                                # Siempre en domain el tercer parametro hace referencia una constante o un valor del modelo de la tabla relacionada.
                                )
-    old_edition = fields.Many2one('library.book', string='Old Edition')
-    
-#     # ALCONOR: Filtrar la vista: "Fases de Proyecto" por "Cuenta Analítica"; seleccionada en la línea: [project.phaseproject por analytic_account_id]
-#     @api.onchange('analytic_account_id')
-#     def onchange_analytic_account_id(self):
-#         if not self.analytic_account_id:
-#             return
-#         tools.drop_view_if_exists(self.env.cr, 'project.phaseproject')
-#         self.env.cr.execute("""CREATE OR REPLACE VIEW project_phaseproject AS (
-#            select min(ptp.id) as id, aaa.id as account_analytic_id, ptp."name" , ptp.notes ,ptp.company_id 
-# from project_task_phase ptp inner join project_project pp 
-# on ptp .project_id = pp.id 
-# inner join account_analytic_account aaa 
-# on pp.analytic_account_id = aaa.id
-# where aaa.id = %d
-# group by aaa.id, ptp."name", ptp.notes, ptp.company_id);
-#         """ % (self.analytic_account_id)
-#         )
 
     # ALCONOR: Valida que las fases seleccionadas sean las correspondientes a la cuenta analitica seleccioanda. 
     @api.onchange('phase_id')
     def onchange_phase_id(self):
+        print("----> Entrando a Cambio de Fase---------------------------------")
         for record in self:
             if not self.phase_id:
                 return
@@ -125,9 +118,10 @@ class JC_StockMove(models.Model):
                 #msg_1 = 'Linea: %d - La Cuenta Analitica seleccioanda: %s no corresponde a la Cuanta Analitica de la Fase seleecionada: %s' % (record, ca_selecc, ca_filtro)
                 #raise exceptions.Warning(msg_1)
 
-    @api.onchange('analytic_account_id')
+    #@api.onchange('analytic_account_id')
+    @api.onchange('analytic_distribution')
     def onchange_aaid(self):
-         
+        print("-----> En cambio de Analytic Distribution -------------------") 
         for record in self:
             if not self.analytic_account_id:
                 # Alconor: 22-mar-2022
@@ -171,35 +165,3 @@ class JC_StockMoveLine(models.Model):
 #                raise models.ValidationError(
 #                    'La Cuenta Analítica debe ser la misma Cuenta Analítica de la Fase!')
 
-#############################################################################################
-# Clase ejemplo para agregar busqueda personalizada a una clase
-#############################################################################################
-class LibraryBook(models.Model): 
-    _name = 'library.book' 
-    name = fields.Char('Title') 
-    isbn = fields.Char('ISBN') 
-    author_ids = fields.Many2many("res.partner", String="Authors",tracking=True)
-
-    def name_get(self): 
-        result = [] 
-        for book in self: 
-            authors = book.author_ids.mapped('name') 
-            name = '%s (%s)' % (book.name, ', '.join(authors)) 
-            result.append((book.id, name)) 
-            return result
-# Para poder buscar library.book ya sea por el título del libro, uno de los autores,
-#  o el número ISBN, debe definir el método _name_search () en la clase LibraryBook,
-#  de la siguiente manera:
-@api.model 
-def _name_search(self, name='', args=None, operator='ilike', 
-                limit=100, name_get_uid=None): 
-    args = [] if args is None else args.copy() 
-    if not(name == '' and operator == 'ilike'): 
-        args += ['|', '|', 
-                ('name', operator, name), 
-                ('isbn', operator, name), 
-                ('author_ids.name', operator, name) 
-                  ] 
-    return super(LibraryBook, self)._name_search( 
-         name=name, args=args, operator=operator, 
-         limit=limit, name_get_uid=name_get_uid) 
