@@ -1,11 +1,14 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <odoo>
     <data>
+        <!--
         <record id="view_move_picking_tree_analyt" model="ir.ui.view">
             <field name="name">stock.move.picking.tree</field>
             <field name="model">stock.move</field>
+
             <field name="inherit_id" ref="stock_analytic.view_move_picking_tree_analyt" />
-                                                
+        
+                                               
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='analytic_account_id']" position="after">
                     <field name="category_id" />
@@ -13,7 +16,8 @@
                 </xpath>
             </field>
         </record>
-        <!--Agrenganfo lote a la lista arbol-->
+            -->
+        <!--Agreganfo lote a la lista arbol-->
         <record model="ir.ui.view" id="view_vpicktree_jc">
             <field name="name">stock.picking.tree</field>
             <field name="model">stock.picking</field>
@@ -34,8 +38,8 @@
             <field name="model">stock.move</field>
             <field name="inherit_id" ref="stock_analytic.view_move_tree" />
             <field name="arch" type="xml">
-                <xpath expr="//field[@name='analytic_account_id']" position="after">
-                    <field name="category_id" />
+                <xpath expr="//field[@name='analytic_distribution']" position="after">
+                    <field name="category_id" optional="show"/>
                     <field name="phase_id" optional="show"/>
                 </xpath>
             </field>
@@ -45,97 +49,78 @@
             <field name="model">stock.move</field>
             <field name="inherit_id" ref="stock_analytic.view_move_form" />
             <field name="arch" type="xml">
-                <xpath expr="//field[@name='analytic_account_id']" position="after">
-                    <field name="category_id" />
-                    <field name="phase_id" optional="show"/>
-                    
-                </xpath>
-            </field>
-        </record>
-        <!--
-        <record id="view_jcpc_move_search_analytic" model="ir.ui.view">
-            <field name="name">jcpc.stock.move.search</field>
-            <field name="model">stock.move</field>
-            <field name="inherit_id" ref="stock_analytic.view_move_search_analytic" />
-            <field name="arch" type="xml">
-                <xpath expr="//field[@name='analytic_account_id']" position="after">
-                    <field name="category_id" />
-                </xpath>
-                <xpath
-                    expr="//filter[@name='groupby_dest_location_id']"
-                    position="after"
-                >
-                    <filter
-                        string="Categoria"
-                        name="category_id"
-                        context="{'group_by':'category_id'}"
+                <xpath expr="//field[@name='analytic_distribution']" position="after">
+                    <field name="category_id" optional="show"/>
+                    <field
+                        name="phase_id"
+                        optional="show"
                         groups="analytic.group_analytic_accounting"
+                    />
+                    <field
+                        name="account_analytic_id"
+                        optional="hide"
                     />
                 </xpath>
             </field>
         </record>
-        -->
 
         <record id="view_picking_form_analytic_jcpc" model="ir.ui.view">
             <field name="name">stock.picking.form</field>
             <field name="model">stock.picking</field>
-            <field name="inherit_id" ref="stock_analytic.view_picking_form_analytic" />
+            <field name="inherit_id" ref="stock_analytic.view_picking_form" />
             <field name="arch" type="xml">
                 <xpath
-                    expr="//field[@name='move_ids_without_package']/tree/field[@name='analytic_account_id']"
+                    expr="//field[@name='move_ids_without_package']/tree/field[@name='analytic_distribution']"
                     position="after"
                 >
                     <field name="category_id" optional="hide"/>
+                    <!--
                     <field name="phase_id" optional="show"/>
-                    <field name="old_edition" optional="hide"/>
-
+                    -->
+                    <field name="account_analytic_id" optional="hide" />
+                    
                 </xpath>
+            </field>
+        </record>    
+                <!--        
                 <xpath
                     expr="//header" position="inside"
                 >
                     <widget name="signature" string="Firma Devol."/>
-                    <!--
-                    <button name="action_confirm_jc" string="Mark as Todo" type="object" class="oe_highlight" groups="base.group_user"/>
-                    -->
-
+     
                     <button name="ver_detalles" string="Cambiar Lote" type="object"/>
                     
                 </xpath>
-                
+     
                 <xpath
-                    expr="//field[@name='move_ids_without_package']/tree/field[@name='analytic_tag_ids']"
+                    expr="//field[@name='move_ids_without_package']/tree/field[@name='analytic_distribution']"
                     position="replace"
                 >
-                    <field name="analytic_tag_ids" string="Etiqueta" widget="many2many_tags" optional="hide"/>
+                    <field
+                        name="analytic_distribution"
+                        string="Analitico"
+                        widget="analytic_distribution"
+                        optional="show"/>
                 </xpath>
-                <!--*-->
-                <xpath
-                    expr="//field[@name='move_ids_without_package']/tree/field[@name='analytic_account_id']"
-                    position="replace"
-                >
-                    <field name="analytic_account_id" string="Lote" optional="show"/>
-                </xpath>
-                <!--partner id obligatorio-->
+
                 <field name="partner_id"
                     position="replace"
                 >
                     <field name="partner_id" required="1" nolabel="1"/>
                 </field>
-                <!--Agregando campo [full_analytic_account_id]-->
                 <field name="backorder_id"
                     position="before">
                         <field name="full_analytic_account_id" string="Imputar todo al Lote:"/>
                 </field>
-                <!--Agregando nueva pestaña-->
                 <xpath expr="//notebook" position="inside">
                     <page string="Mano de Obra">
-                        <!-- Aquí puedes agregar los campos y elementos que quieras en esta pestaña -->
                         <field name="actividades_id"></field>
                     </page>
                 </xpath>
 
             </field>
         </record>
+        -->
         <!--lista de phases en la vista: project.phaseproject-->
         <record id="task_phase_tree_vsql" model="ir.ui.view">
             <field name="name">project.phaseproject.tree</field>
