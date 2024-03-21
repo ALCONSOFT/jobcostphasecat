@@ -3,6 +3,5 @@
 
 from . import models
 from . import models_stock
-#purchase_req
-from . import models_reports
+#from . import models_reports
 from . import models_stock_picking

@@ -123,9 +123,10 @@ class JC_StockMove(models.Model):
     def onchange_aaid(self):
         print("-----> En cambio de Analytic Distribution -------------------") 
         for record in self:
-            if not self.analytic_account_id:
+            if not self.account_analytic_id:
+                #self.analytic_account_id:
                 # Alconor: 22-mar-2022
-                self.analytic_account_id = self.env['stock.picking'].browse(self.picking_id.full_analytic_account_id).id
+                self.account_analytic_id = self.env['stock.picking'].browse(self.picking_id.full_analytic_account_id).id
                 # self: hace referenca al modelo actual en el que se esta apuntando.
                 # env: hace referencia al Enviroment o Entorno; por el cual se puede localizar cualquier otro modelo
                 # modelo: clases de python que en odoo se usan para acceeder a los registros de bases de datos o funciones
@@ -134,7 +135,7 @@ class JC_StockMove(models.Model):
                 # 22-mar-2022
                 return
             else:
-                ln_aaid = self.analytic_account_id
+                ln_aaid = self.account_analytic_id
                 print('El indice de las aaid es: %', ln_aaid)
                 # Llamar a la función _bldf
                 domini = self._bldf()
