@@ -26,7 +26,7 @@
             <field name="arch" type="xml">
                 <!--*ojo-->
                 <field name="json_popover" position="before">
-                    <field name="full_analytic_account_id" string="Lote" optional="show"/>
+                    <field name="full_analytic_account_id" string="Project" optional="show"/>
                 </field>
                 
             </field>
@@ -69,15 +69,19 @@
             <field name="model">stock.picking</field>
             <field name="inherit_id" ref="stock_analytic.view_picking_form" />
             <field name="arch" type="xml">
+
+                <field name="backorder_id"
+                    position="before">
+                        <field name="full_analytic_account_id" string="Todo al Proy."/>
+                </field>
+                
                 <xpath
                     expr="//field[@name='move_ids_without_package']/tree/field[@name='analytic_distribution']"
                     position="after"
                 >
                     <field name="category_id" optional="hide"/>
-                    <!--
+                    <field name="account_analytic_id" optinoal="show"/>
                     <field name="phase_id" optional="show"/>
-                    -->
-                    <field name="account_analytic_id" optional="hide" />
                     
                 </xpath>
             </field>
