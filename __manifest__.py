@@ -21,7 +21,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': ' -> 24.03.07-21',
+    'version': ' -> 24.03.11-17',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases','stock_analytic'],
