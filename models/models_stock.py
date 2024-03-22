@@ -71,21 +71,21 @@ group by aaa.id, ptp."name", ptp.notes, ptp.company_id);
 class JC_StockMove(models.Model):
     _inherit = "stock.move"
 
-    @api.depends('analytic_account_id')
+    @api.depends('account_analytic_id')
     def _bldf(self):
         print('Entrando a _bldf')
         domain=""" [] """
         for record in self:
-            if not record.analytic_account_id:
+            if not record.account_analytic_id:
                 domain=""" [] """
                 print('dominio: sin filtro')
             else:
                 domain=""" [("account_analytic_id", "=", %d )]
-                    """ % (record.analytic_account_id)
+                    """ % (record.account_analytic_id)
                 print('dominio: con filtro:', domain)
             return domain
 
-    account_analytic_id = fields.Many2one('account.analytic.account', readonly=True, string='Cuenta Analítica')
+    account_analytic_id = fields.Many2one('account.analytic.account', readonly=False, string='Cuenta Analítica')
 
     category_id = fields.Many2one(
         "project.category", string="Categoria", tracking=True)
@@ -109,22 +109,20 @@ class JC_StockMove(models.Model):
             if not self.phase_id:
                 return
             else:
-                ca_filtro = self.analytic_account_id
+                ca_filtro = self.account_analytic_id
                 if self.description_picking == False:
                     self.description_picking = self.phase_id.name
                 else:
-                    self.description_picking += self.phase_id.name
+                    self.description_picking += " " + self.phase_id.name
                 print('Filtro: ', ca_filtro)
                 #msg_1 = 'Linea: %d - La Cuenta Analitica seleccioanda: %s no corresponde a la Cuanta Analitica de la Fase seleecionada: %s' % (record, ca_selecc, ca_filtro)
                 #raise exceptions.Warning(msg_1)
 
-    #@api.onchange('analytic_account_id')
-    @api.onchange('analytic_distribution')
+    @api.onchange('analytic_distribution', 'account_analytic_id')
     def onchange_aaid(self):
-        print("-----> En cambio de Analytic Distribution -------------------") 
+        print("-----> Entrando a: cambio de Analytic Distribution -------------------") 
         for record in self:
             if not self.account_analytic_id:
-                #self.analytic_account_id:
                 # Alconor: 22-mar-2022
                 self.account_analytic_id = self.env['stock.picking'].browse(self.picking_id.full_analytic_account_id).id
                 # self: hace referenca al modelo actual en el que se esta apuntando.
@@ -153,6 +151,7 @@ class JC_StockMoveLine(models.Model):
 
     category_id = fields.Many2one(
         "project.category", string="Categoria", tracking=True)
+    account_analytic_id = fields.Many2one('account.analytic.account', readonly=False, string='Cuenta Analítica')
     phase_id = fields.Many2one("project.phaseproject",
                                string="Fase",
                                tracking=True
