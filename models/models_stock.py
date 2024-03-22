@@ -109,11 +109,12 @@ class JC_StockMove(models.Model):
             if not self.phase_id:
                 return
             else:
-                ca_filtro = self.analytic_account_id
+                #ca_filtro = self.analytic_account_id
+                ca_filtro = self.account_analytic_id
                 if self.description_picking == False:
                     self.description_picking = self.phase_id.name
                 else:
-                    self.description_picking += self.phase_id.name
+                    self.description_picking += " " + self.phase_id.name
                 print('Filtro: ', ca_filtro)
                 #msg_1 = 'Linea: %d - La Cuenta Analitica seleccioanda: %s no corresponde a la Cuanta Analitica de la Fase seleecionada: %s' % (record, ca_selecc, ca_filtro)
                 #raise exceptions.Warning(msg_1)
@@ -121,7 +122,7 @@ class JC_StockMove(models.Model):
     #@api.onchange('analytic_account_id')
     @api.onchange('analytic_distribution')
     def onchange_aaid(self):
-        print("-----> En cambio de Analytic Distribution -------------------") 
+        print("-----> Entrando a: cambio de Analytic Distribution -------------------") 
         for record in self:
             if not self.account_analytic_id:
                 #self.analytic_account_id:
