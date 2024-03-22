@@ -11,7 +11,8 @@
             - stock.picking, stock.move, stock.move.line
             - Basarse en modulo: stock_analytic: cuenta analítica modulo de Inventario.
             - Agregando por codigo validación de fecha de cierre [close_date]
-            - Agregando cambios para compatibilidad con odoo 16
+            - Agregando cambios para compatibilidad con odoo 16:
+                - iteracción con account Analytic Distribution
     """,
 
     'author': "Alconsoft",
@@ -21,7 +22,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': ' -> 24.03.11-17',
+    'version': ' -> 24.03.22-06',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases','stock_analytic'],
