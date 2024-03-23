@@ -1,0 +1,47 @@
+<odoo>
+    <data>
+        <!-- Heredar la vista tree de purchase.order sdp-->
+        <record id="purchase_order_inherit_purchase_order_tree" model="ir.ui.view">
+            <field name="name">purchase.order.inherit.purchase.order.tree</field>
+            <field name="model">purchase.order</field>
+            <field name="inherit_id" ref="purchase.purchase_order_kpis_tree"/>
+            <field name="arch" type="xml">
+                <!-- Insertar los campos después del campo 'invoice_status' -->
+                <xpath expr="//field[@name='invoice_status']" position="after">
+                    <field name="vehicle_id" optional="show"/>
+                    <field name="account_analytic_id" optional="show"/>
+                </xpath>
+            </field>
+        </record>
+        <!-- Heredar la vista tree de purchase.order po-->
+        <record id="purchase_order_inherit_purchase_order_tree_jc" model="ir.ui.view">
+            <field name="name">purchase.order.inherit.purchase.order.tree</field>
+            <field name="model">purchase.order</field>
+            <field name="inherit_id" ref="purchase.purchase_order_view_tree"/>
+            <field name="arch" type="xml">
+                <!-- Insertar los campos después del campo 'invoice_status' -->
+                <xpath expr="//field[@name='invoice_status']" position="after">
+                    <field name="vehicle_id" optional="show"/>
+                    <field name="account_analytic_id" optional="show"/>
+                </xpath>
+            </field>
+        </record>
+        <!-- Heredar la vista form de purchase.order -->
+        <record id="purchase_order_form_custom_fields" model="ir.ui.view">
+            <field name="name">purchase.order.form.custom.fields</field>
+            <field name="model">purchase.order</field>
+            <field name="inherit_id" ref="purchase.purchase_order_form"/>
+            <field name="arch" type="xml">
+                <!-- Insertar campos después del campo 'effective_date' -->
+                <xpath expr="//field[@name='effective_date']" position="after">
+                    <field name="account_analytic_id"/>
+                    <field name="vehicle_id"/>
+                </xpath>
+                <xpath expr="//field[@name='price_tax']" position="after">
+                    <field name="vehicle_id" optional="show"/>
+                    <field name="account_analytic_id" optional="show"/>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

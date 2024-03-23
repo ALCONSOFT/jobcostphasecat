@@ -25,12 +25,13 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': ' -> 24.03.22-17:00',
+    'version': ' -> 24.03.22-20:05',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',
                 'stock_analytic',
-                'ethics_purchase_request'],
+                'ethics_purchase_request',
+                'purchase'],
 
     # always loaded: Aqui se cargan los formularios de vista.
     # IMPORTANTE: SE QUITA EL CARACTER "#" PARA QUE SE PUEDA CARGAR ARCHIVO CON LA LISTA DE ACCESO DE SEGURIDAD
@@ -43,6 +44,7 @@
         #'views/views_reports.xml',
         'views/view_picking.xml',
         'views/views_ethics_purchase_request.xml',
+        'views/views_purchase_order.xml',
         'static/xls/project.costtype.csv',
         'static/xls/project.category.csv',
         ###############################
