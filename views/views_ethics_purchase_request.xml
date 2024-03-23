@@ -9,7 +9,7 @@
                 <field name="vehicle_id" optional="hide"/>
                 <field name="account_analytic_id" optional="hide"/>
             </field>
-            <xpath expr="//field[@name='vendor_ids']/following-sibling::field[1]" position="after">
+            <xpath expr="//field[@name='vendor_ids']" position="after">
                 <field name="vehicle_id" optional="hide"/>
             </xpath>
 
