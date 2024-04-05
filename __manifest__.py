@@ -15,7 +15,7 @@
                 - iteracción con account Analytic Distribution en Transferencias
                 - Agregando a linea de las compras el vehículo y Cuenta Analítica
                   al que se le realiza la compra
-                - *****
+                - Agregando funcion que agrega paramretros de almacen y vehiculo al pase al SdP
     """,
 
     'author': "Alconsoft",
@@ -25,12 +25,13 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': ' -> 24.03.22-20:05',
+    'version': ' -> 24.04.03-20:05',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',
                 'stock_analytic',
                 'ethics_purchase_request',
+                'alternative_sequences',
                 'purchase'],
 
     # always loaded: Aqui se cargan los formularios de vista.

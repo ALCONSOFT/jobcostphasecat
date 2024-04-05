@@ -12,6 +12,11 @@
             <xpath expr="//field[@name='vendor_ids']" position="after">
                 <field name="vehicle_id" optional="hide"/>
             </xpath>
+            <!--boton: action_confirm_ethics-->
+            <!-- Reemplazamos el botón original con uno nuevo -->
+            <xpath expr="//button[@name='action_confirm']" position="replace">
+                <button name="action_confirm_ethics" type="object" string="Confirm Ethics" class="oe_highlight"/>
+            </xpath>
 
         </field>
     </record>
