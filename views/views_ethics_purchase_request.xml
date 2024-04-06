@@ -27,7 +27,7 @@
     <record id="view_purchase_request_form_inherit_ethics_pr2" model="ir.ui.view">
         <field name="name">purchase.request.form.inherit.ethicspr2</field>
         <field name="model">purchase.request</field>
-        <field name="inherit_id" ref="alternative_sequences.view_purchase_request_form_inherit_seqal"/>
+        <field name="inherit_id" ref="alternatives_sequences.view_purchase_request_form_inherit_seqal"/>
         <field name="arch" type="xml">
             <!-- Cambiar el label         
             <xpath expr="//label[@for='warehouse_id']" position="replace">
