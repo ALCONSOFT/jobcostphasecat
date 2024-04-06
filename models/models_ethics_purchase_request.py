@@ -6,8 +6,18 @@ import time
 class EthicsPurchaseRequest(models.Model):
     _inherit = 'purchase.request'
 
+    def _default_picking_type_id(self):
+        return self.env['stock.picking.type'].search([('warehouse_id.company_id', '=', self.env.company.id), ('code', '=', 'incoming')], limit=1)
+
     vehicle_id = fields.Many2one('fleet.vehicle', string='Vehicle', index='btree_not_null')
     account_analytic_id = fields.Many2one('account.analytic.account', readonly=False, string='Cuenta Analítica')
+    picking_type_id = fields.Many2one(
+        'stock.picking.type', 'Operation Type', required=True, default=_default_picking_type_id,
+        domain="['|',('warehouse_id', '=', False), ('warehouse_id.company_id', '=', company_id)]")
+
+    @api.onchange('picking_type_id')
+    def _onchange_picking_type_id(self):
+        self.warehouse_id = self.picking_type_id.warehouse_id
 
     def action_confirm_ethics(self):
             if any(line.product_qty == 0 for line in self.pr_lines):
