@@ -6,16 +6,42 @@
         <field name="inherit_id" ref="ethics_purchase_request.view_purchase_request_form"/>
         <field name="arch" type="xml">
             <field name="request_responsible" position="after">
+                <field name="picking_type_id" string="Entregar a Almacén:"/>
                 <field name="vehicle_id" optional="hide"/>
                 <field name="account_analytic_id" optional="hide"/>
             </field>
             <xpath expr="//field[@name='vendor_ids']" position="after">
                 <field name="vehicle_id" optional="hide"/>
             </xpath>
-
+            <!--boton: action_confirm_ethics-->
+            <!-- Reemplazamos el botón original con uno nuevo -->
+            <xpath expr="//button[@name='action_confirm']" position="replace">
+                <button name="action_confirm_ethics"
+                        string="Confirm" class="btn-primary" type="object"
+                        attrs="{'invisible': [('state', '!=', 'waiting_for_approver')]}"
+                        groups="ethics_purchase_request.group_request_approver"/>
+            </xpath>
         </field>
     </record>
-    
+
+    <record id="view_purchase_request_form_inherit_ethics_pr2" model="ir.ui.view">
+        <field name="name">purchase.request.form.inherit.ethicspr2</field>
+        <field name="model">purchase.request</field>
+        <field name="inherit_id" ref="alternative_sequences.view_purchase_request_form_inherit_seqal"/>
+        <field name="arch" type="xml">
+            <!-- Cambiar el label         
+            <xpath expr="//label[@for='warehouse_id']" position="replace">
+                <label for="warehouse_id" string="Almacén"/>
+            </xpath>
+            -->
+            <!-- Hacer el campo solo lectura -->
+            <xpath expr="//field[@name='warehouse_id']" position="attributes">
+                <attribute string="Almacén" name="readonly">1</attribute>
+            </xpath>
+        </field>
+    </record>
+
+
     <!-- Si también necesitas heredar la vista tree -->
     <record id="view_purchase_request_tree_inherit_jobcostphasecat" model="ir.ui.view">
         <field name="name">purchase.request.tree.inherit.jobcostphasecat</field>
