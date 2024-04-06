@@ -32,7 +32,7 @@
     'depends': ['bi_odoo_project_phases',
                 'stock_analytic',
                 'ethics_purchase_request',
-                'alternative_sequences',
+                'alternatives_sequences',
                 'purchase'],
 
     # always loaded: Aqui se cargan los formularios de vista.
