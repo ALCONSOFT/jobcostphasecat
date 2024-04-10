@@ -17,6 +17,9 @@
                   al que se le realiza la compra
                 - Agregando funcion que agrega parametros de almacen y vehiculo al pase al SdP
                 - Agregando picking_type_id
+                - Agregando valores_Defaults por modelo
+                - Agregando estado: Esperando por Auditoria
+                - Agregando vehicle al modelo back.purhcase.request
     """,
 
     'author': "Alconsoft",
@@ -26,13 +29,12 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': ' -> 24.04.05-17:46',
+    'version': '24.04.09-21:21',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',
                 'stock_analytic',
                 'ethics_purchase_request',
-                'alternatives_sequences',
                 'purchase'],
 
     # always loaded: Aqui se cargan los formularios de vista.
