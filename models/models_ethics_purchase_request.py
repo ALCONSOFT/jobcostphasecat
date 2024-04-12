@@ -2,6 +2,7 @@
 from odoo import models, fields, api, _
 from datetime import timedelta
 import time
+from odoo.exceptions import ValidationError
 
 contexto_purchase_request = []
 
@@ -260,9 +261,11 @@ class PurchaseOrders(models.Model):
     # Extendiendo el campo 'state' para agregar el nuevos estados
     state = fields.Selection(selection_add=[('waiting_for_price_revision', 'Esperando por Revisión de Precios'),
                                             ('waiting_for_price_approval','Esperando por Aprobación de Precios'),
-                                            ('waiting_for_approval','Esperando por Aprobación')
+                                            ('waiting_for_approval','Esperando por Aprobación'),
+                                            ('to approve','Por Aprobar @ Compras')
         ], ondelete={'waiting_for_approval': 'cascade'})
 
+    # Botones en waiting_for_price_revision
     def action_waiting_for_price_revision(self):
         for rec in self:
             rec.state = 'waiting_for_price_revision'
@@ -271,17 +274,48 @@ class PurchaseOrders(models.Model):
         for rec in self:
             rec.state = 'sent'
 
+    # Botones en waiting_for_price_approval
     def action_waiting_for_price_approval(self):
+        for reg in self.order_line:
+            if reg.price_total == 0:
+                raise ValidationError("El valor del precio unitario no puede ser 0.")
+                return
         for rec in self:
             rec.state = 'waiting_for_price_approval'
     
     def reject_waiting_for_price_approval(self):
         for rec in self:
             rec.state = 'waiting_for_price_revision'
+    
+    # Botones en waiting_for_approval
+    def action_waiting_for_approval(self):
+        for rec in self:
+            rec.state = 'waiting_for_approval'
+    
+    # Boton Rechazar Aprobación de SdP = Rechazar Pedido
+    def reject_waiting_for_approval(self):
+        # Acciones personalizadas antes de llamar al método de la clase base
+        for record in self:
+            record.state = 'waiting_for_price_approval'
+        # Llamada al método reject_purchase de la clase base usando super()
+        super(PurchaseOrders, self).reject_purchase()
+    
+    def action_buttom_approve_jc(self):
+        for record in self:
+            record.state = 'to approve'
+        # Llamada al método reject_purchase de la clase base usando super()
+        super(PurchaseOrders, self).action_button_approve()
+
+    """# Botón Rechazar Pedido - Cual funiona bien?????????
+    def reject_puchase(self):
+        super(PurchaseOrders, self).reject_purchase()
+        for rec in self:
+            rec.state = 'waiting_for_price_approval'
+    """
+    
 
 class PurchaseOrderLine(models.Model):
     _inherit = 'purchase.order.line'
 
     vehicle_id = fields.Many2one('fleet.vehicle', string='Vehicle', index='btree_not_null')
     account_analytic_id = fields.Many2one('account.analytic.account', readonly=False, string='Cuenta Analítica')
-
