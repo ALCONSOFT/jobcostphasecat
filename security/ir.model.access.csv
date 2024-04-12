@@ -9,3 +9,4 @@ access_jobcostphasecat_closeddate_user,jobcostphasecat.closeddate.user,model_sto
 access_jobcostphasecat_closeddate_manager,jobcostphasecat.closeddate.manager,model_stock_picking_closed,project.group_project_manager,1,1,1,1
 access_jobcostphasecat_stockmensaje_user,jobcostphasecat.stockmensaje.user,model_stock_mensaje,project.group_project_user,1,1,1,1
 access_jobcostphasecat_stockmensaje_manager,jobcostphasecat.stockmensaje.manager,model_stock_mensaje,project.group_project_manager,1,1,1,1
+access_jobcostphasecat_valores_defaults,jobcostphasecat.valores.defaults,model_valores_defaults,,1,1,1,1

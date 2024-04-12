@@ -26,7 +26,7 @@
                 </xpath>
             </field>
         </record>
-        <!-- Heredar la vista form de purchase.order -->
+        <!-- Heredar la vista form de purchase.order.form-->
         <record id="purchase_order_form_custom_fields" model="ir.ui.view">
             <field name="name">purchase.order.form.custom.fields</field>
             <field name="model">purchase.order</field>
@@ -41,7 +41,94 @@
                     <field name="vehicle_id" optional="show"/>
                     <field name="account_analytic_id" optional="show"/>
                 </xpath>
+
             </field>
         </record>
+        <!-- Heredar la vista form de purchase.order.form.approval.rules -->
+        <record id="purchase_order_form_approval_rules_jc" model="ir.ui.view">
+            <field name="name">purchase.order.form.approval.rules.jc</field>
+            <field name="model">purchase.order</field>
+            <field name="inherit_id" ref="purchase_approval_kanak.purchase_order_form_approval_rules"/>
+            <field name="arch" type="xml">
+                <!-- Cambiar atributos del boton Refresh & Apporval-->
+                <xpath expr="//button[@name='action_refresh_order']" position="attributes">
+                    <attribute name='attrs'>{'invisible': ['|', ('state','!=','waiting_for_price_revision'), ('purchase_order_approval_rule_ids', '!=', [])]}
+                    </attribute>
+                    <attribute name='string'>Refrescar Reglas de Aprobación</attribute>
+                </xpath>
+                <!-- Cambiar los atributos del boton: action_send_for_approval-->
+                <!-- Cambiar los atributos del boton: action_rfq_send
+                    <attribute name='attrs'>{'invisible': ['|', ('state','!=','draft'), ('purchase_order_approval_rule_ids', '!=', [])]} -->
+                <xpath expr="//button[@name='action_rfq_send']" position="attributes">
+                    <attribute name='attrs'>{'invisible': [('state','!=','draft') ]}
+                    </attribute> 
+                </xpath>
+                <!-- Cambiar los atributos del boton: button_confirm-->
+                <xpath expr="//button[@name='button_confirm']" position="attributes">
+                    <attribute name='attrs'>{'invisible': ['|', ('state','!=','waiting_for_approval'), ('purchase_order_approval_rule_ids', '!=', [])]}
+                    </attribute>
+                    <attribute name="string">Confirmar Pedido</attribute>
+                </xpath>
+                <!-- Cambiar atributos del boton: reject_purchase (rechazo en Aprobación)-->
+                <xpath expr="//button[@name='reject_purchase']" position="attributes">
+                    <attribute name='attrs'>{'invisible': ['|', ('state','!=','waiting_for_approval'), ('purchase_order_approval_rule_ids', '!=', [])]}
+                    </attribute>
+                    <attribute name="string">Rechazar Pedido</attribute>
+                </xpath>
+                <!-- Insertar boton: Envio para Revisión de Precio-->
+                <xpath expr="//button[@name='button_confirm']" position="before">
+                    <button name="action_waiting_for_price_revision"
+                        string="Envío a Revisión de Precios" type="object"
+                        groups="base.group_user"
+                        attrs="{'invisible': [('state', '!=', 'sent') ] }"
+                    />
+                </xpath>
+                <!-- Insertar boton: Envio para Aprobación de Precio-->
+                <xpath expr="//button[@name='button_confirm']" position="before">
+                    <button name="action_waiting_for_price_approval"
+                        string="Envío a Aprobación de Precios" type="object"
+                        groups="base.group_user"
+                        attrs="{'invisible': [('state', '!=', 'waiting_for_price_revision') ] }"
+                    />
+                    <button name="reject_waiting_for_price_revision"
+                        string="Rechazo en Revisión de Precios" type="object"
+                        groups="base.group_user"
+                        attrs="{'invisible': [('state', '!=', 'waiting_for_price_revision') ] }"
+                    />
+                </xpath>
+                <!-- Insertar boton: Envio para Aprobación de SdP -->
+                <xpath expr="//button[@name='button_confirm']" position="before">
+                    <button name="action_waiting_for_approval"
+                        string="Envío a Aprobación de SdP" type="object"
+                        groups="base.group_user"
+                        attrs="{'invisible': [('state', '!=', 'waiting_for_price_approval') ] }"
+                    />
+                    <button name="reject_waiting_for_price_approval"
+                        string="Rechazo en Arpobación de Precios" type="object"
+                        class="oe_buttom"
+                        groups="base.group_user"
+                        attrs="{'invisible': [('state', '!=', 'waiting_for_price_approval') ] }"
+                    />
+                </xpath>
+                <!-- Insertar boton: Rechazar Aprobación de SdP -->
+                <xpath expr="//button[@name='button_confirm']" position="before">
+                    <button name="reject_waiting_for_approval"
+                        string="Rechazo de Aprobación de SdP" type="object"
+                        groups="base.group_user"
+                        attrs="{'invisible': [('state', '!=', 'waiting_for_approval') ] }"
+                    />
+                </xpath>
+                <!-- Cambio de atributos del botón: action_button_Approve -->
+                <xpath expr="//button[@name='button_confirm']" position="before">
+                    <button name="action_buttom_approve_jc"
+                        string="Aprobación de SdP" type="object"
+                        groups="base.group_user"
+                        attrs="{'invisible': [('state', '!=', 'waiting_for_approval') ] }"
+                    />
+                </xpath>
+
+            </field>
+        </record>
+
     </data>
 </odoo>
