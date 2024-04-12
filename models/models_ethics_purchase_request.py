@@ -256,7 +256,28 @@ class PurchaseOrders(models.Model):
     _inherit = 'purchase.order'
 
     vehicle_id = fields.Many2one('fleet.vehicle', string='Vehicle', index='btree_not_null')
-    account_analytic_id = fields.Many2one('account.analytic.account', readonly=False, string='Cuenta Analítica')    
+    account_analytic_id = fields.Many2one('account.analytic.account', readonly=False, string='Cuenta Analítica')
+    # Extendiendo el campo 'state' para agregar el nuevos estados
+    state = fields.Selection(selection_add=[('waiting_for_price_revision', 'Esperando por Revisión de Precios'),
+                                            ('waiting_for_price_approval','Esperando por Aprobación de Precios'),
+                                            ('waiting_for_approval','Esperando por Aprobación')
+        ], ondelete={'waiting_for_approval': 'cascade'})
+
+    def action_waiting_for_price_revision(self):
+        for rec in self:
+            rec.state = 'waiting_for_price_revision'
+    
+    def reject_waiting_for_price_revision(self):
+        for rec in self:
+            rec.state = 'sent'
+
+    def action_waiting_for_price_approval(self):
+        for rec in self:
+            rec.state = 'waiting_for_price_approval'
+    
+    def reject_waiting_for_price_approval(self):
+        for rec in self:
+            rec.state = 'waiting_for_price_revision'
 
 class PurchaseOrderLine(models.Model):
     _inherit = 'purchase.order.line'

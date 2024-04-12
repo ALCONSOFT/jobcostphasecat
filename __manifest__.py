@@ -20,6 +20,8 @@
                 - Agregando valores_Defaults por modelo
                 - Agregando estado: Esperando por Auditoria
                 - Agregando vehicle al modelo back.purhcase.request
+                - Agregando Flujo de Estado en Solicitud de Presupuesto & O.C.
+                    - waiting_for_price_revision
     """,
 
     'author': "Alconsoft",
@@ -29,13 +31,14 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '24.04.09-21:21',
+    'version': '24.04.11-22:01',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',
                 'stock_analytic',
                 'ethics_purchase_request',
-                'purchase'],
+                'purchase',
+                'purchase_approval_kanak'],
 
     # always loaded: Aqui se cargan los formularios de vista.
     # IMPORTANTE: SE QUITA EL CARACTER "#" PARA QUE SE PUEDA CARGAR ARCHIVO CON LA LISTA DE ACCESO DE SEGURIDAD
