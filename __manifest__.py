@@ -22,6 +22,8 @@
                 - Agregando vehicle al modelo back.purhcase.request
                 - Agregando Flujo de Estado en Solicitud de Presupuesto & O.C.
                     - waiting_for_price_revision
+                    - waiting_for_price_approval
+                    - waiting_for_approval
     """,
 
     'author': "Alconsoft",
@@ -31,7 +33,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '24.04.11-22:01',
+    'version': '24.04.12 16:4440',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',
