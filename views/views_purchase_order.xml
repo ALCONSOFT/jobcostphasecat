@@ -52,7 +52,10 @@
             <field name="arch" type="xml">
                 <!-- Cambiar atributos del boton Refresh & Apporval-->
                 <xpath expr="//button[@name='action_refresh_order']" position="attributes">
-                    <attribute name='attrs'>{'invisible': ['|', ('state','!=','waiting_for_price_revision'), ('purchase_order_approval_rule_ids', '!=', [])]}
+                    <attribute name='attrs'>{'invisible': ['|', ('state','!=','waiting_for_price_revision'),
+                                             ('state','!=','draft'),
+                                             ('state','!=','sent'),
+                                             ('purchase_order_approval_rule_ids', '!=', [])]}
                     </attribute>
                     <attribute name='string'>Refrescar Reglas de Aprobación</attribute>
                 </xpath>

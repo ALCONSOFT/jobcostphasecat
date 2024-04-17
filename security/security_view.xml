@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <data noupdate="0">
+        <record id="group_request_auditor" model="res.groups">
+            <field name="name">Auditor</field>
+            <field name="category_id" ref="ethics_purchase_request.module_category_request"/>
+            <field name="implied_ids" eval="[(4, ref('ethics_purchase_request.group_request_verifier'))]"/>
+        </record>
+        <record id="group_request_buyer" model="res.groups">
+            <field name="name">Comprador</field>
+            <field name="category_id" ref="ethics_purchase_request.module_category_request"/>
+            <field name="implied_ids" eval="[(4, ref('ethics_purchase_request.group_request_approver'))]"/>
+            <field name="users" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
+        </record>
+    </data>
+</odoo>

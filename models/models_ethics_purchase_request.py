@@ -12,20 +12,26 @@ class EthicsPurchaseRequest(models.Model):
     def action_waiting_for_audit(self):
         for rec in self:
             rec.state = 'waiting_for_audit'
+            self.message_post(
+                body=_('SdC: ' + self.name + ' enviada a Auditoría.')
+            )
+
 
     def _default_picking_type_id(self):
         return self.env['stock.picking.type'].search([('warehouse_id.company_id', '=', self.env.company.id), ('code', '=', 'incoming')], limit=1)
 
-    vehicle_id = fields.Many2one('fleet.vehicle', string='Vehículo', index='btree_not_null')
-    account_analytic_id = fields.Many2one('account.analytic.account', string='Cuenta Analítica', readonly=False)
+    vehicle_id = fields.Many2one('fleet.vehicle', string='Vehículo', index='btree_not_null', tracking=True)
+    account_analytic_id = fields.Many2one('account.analytic.account', string='Cuenta Analítica', readonly=False, tracking=True)
     warehouse_id = fields.Many2one('stock.warehouse', string='Almacén', domain="[('company_id', '=', company_id)]", required=True, readonly=False)
     sequence_alter = fields.Char(string='Secuencia Alterna', readonly=True, index=True, rerquired=True)
     picking_type_id = fields.Many2one(
         'stock.picking.type', 'Operation Type', required=True, default=_default_picking_type_id,
-        domain="['|',('warehouse_id', '=', False), ('warehouse_id.company_id', '=', company_id)]")
+        domain="['|',('warehouse_id', '=', False), ('warehouse_id.company_id', '=', company_id)]", tracking=True)
     # Extendiendo el campo 'state' para agregar el nuevo estado
     state = fields.Selection(selection_add=[('waiting_for_audit', 'Esperando por Auditoría'),
+                                                ('waiting_for_buyer', "Esperando por Comprador")
         ], ondelete={'waiting_for_audit': 'cascade'})
+    pr_lines = fields.One2many('purchase.request.line', 'pr_id', tracking=True)
 
     @api.onchange('vehicle_id')
     def _onchange_vehicle_id(self):
@@ -81,8 +87,7 @@ class EthicsPurchaseRequest(models.Model):
             'type': 'ir.actions.act_window',
             'target':'new'
         }
-    
-    
+        
     @api.onchange('picking_type_id')
     def _onchange_picking_type_id(self):
         self.warehouse_id = self.picking_type_id.warehouse_id
@@ -91,6 +96,9 @@ class EthicsPurchaseRequest(models.Model):
             if any(line.product_qty == 0 for line in self.pr_lines):
                 raise UserError(_("Can you please set product qty."))
             if all(line.vendor_ids for line in self.pr_lines):
+                self.message_post(
+                    body=_('SdC: ' + self.name + ' fué APROBADA POR GERENCIA.')
+                )
                 self.create_rfq_ethics()
             else:
                 view = self.env.ref('ethics_purchase_request.view_back_purchase_request_form')
@@ -204,6 +212,27 @@ class EthicsPurchaseRequest(models.Model):
             # No tiene código el almacén
             sequence = None
         return sequence
+    
+    def action_submit_for_verifier_jc(self):
+        super(EthicsPurchaseRequest, self).action_submit_for_verifier()
+        self.message_post(
+            body=_('SdC: ' + self.name + ' enviada a Verificación.')
+        )
+    
+    def reject_verifier_pr_jc(self):
+        super(EthicsPurchaseRequest, self).reject_verifier_pr()
+        self.message_post(
+            body=_('SdC: ' + self.name + ' RECHAZADA en la Verificación. - Para mayor información consulte la notas internas o contacte con su Verificad@r')
+        )
+
+    # Accion: Enviar por Auditoria;  ENviar a Compras
+    def action_submit_for_audit(self):
+        self.state = 'waiting_for_buyer'        
+        self.message_post(
+            body=_('SdC: ' + self.name + ' se envió a Compras')
+        )
+
+
 
 class EthicsPuchasRequestLine(models.Model):
     _inherit = 'purchase.request.line'
@@ -211,11 +240,15 @@ class EthicsPuchasRequestLine(models.Model):
     vehicle_id = fields.Many2one('fleet.vehicle',
                                 string='Vehículo',
                                 index='btree_not_null',
-                                 default=lambda self: self._default_vehicle_id())
+                                 default=lambda self: self._default_vehicle_id(), tracking=True)
     account_analytic_id = fields.Many2one('account.analytic.account',
                                             readonly=False,
                                             string='Cuenta Analítica',
-                                            default=lambda self: self._default_aaid())
+                                            default=lambda self: self._default_aaid(), tracking=True)
+    product_qty = fields.Float('Quantity', default=1, tracking=True)
+    product_uom = fields.Many2one('uom.uom', related='product_id.uom_po_id', tracking=True,
+        help="This comes from the product form.")
+    vendor_ids = fields.Many2many('res.partner', tracking=True)    
 
     def _default_vehicle_id(self):
         user_id = self.env.user.id
@@ -228,6 +261,7 @@ class EthicsPuchasRequestLine(models.Model):
             print("Valor de clave encontrado:", valor_clave)
         else:
             print("No se encontró un registro con los criterios especificados.")
+            valor_clave = 0
         return int(valor_clave)
     
     def _default_aaid(self):
@@ -241,6 +275,7 @@ class EthicsPuchasRequestLine(models.Model):
             print("Valor de clave encontrado:", valor_clave)
         else:
             print("No se encontró un registro con los criterios especificados.")
+            valor_clave = 0
         return int(valor_clave)
 
 class BackEthicsPurchaseRequest(models.TransientModel):
@@ -313,7 +348,6 @@ class PurchaseOrders(models.Model):
             rec.state = 'waiting_for_price_approval'
     """
     
-
 class PurchaseOrderLine(models.Model):
     _inherit = 'purchase.order.line'
 
