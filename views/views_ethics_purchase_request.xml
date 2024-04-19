@@ -74,15 +74,6 @@
                         attrs="{'invisible': [('state', '!=', 'waiting_for_buyer')]}"
                         groups="jobcostphasecat.group_request_buyer"/>                        
             </xpath>
-            
-            <!-- Gerente aprueba y se crean las SdP envia hacia Dept. Compras
-            <xpath expr="//button[@name='action_submit_for_approver']" position="replace">
-                <button name="action_submit_for_approver"
-                        string="Enviar para Aprobación" class="btn-primary" type="object"
-                        attrs="{'invisible': [('state', '!=', 'waiting_for_approver')]}"
-                        groups="ethics_purchase_request.group_request_approver"/>
-            </xpath>
-            -->
             <xpath expr="//button[@name='action_submit_for_verifier']" position="replace">
                 <button name="action_submit_for_verifier_jc"
                         string="Enviar a Verificar" class="btn-primary" type="object"
@@ -94,6 +85,13 @@
                         string="Rechazar" type="object" class='oe_highlight'
                         attrs="{'invisible': [('state', '!=', 'waiting_for_verifier')]}"
                         groups="ethics_purchase_request.group_request_verifier"/>
+            </xpath>
+            <!-- Cambiar el campo vendor_ids; para que tambien el cpomrador pueda agregar los vendors-->
+            <xpath expr="//field[@name='vendor_ids']" position="replace">
+                <field name="vendor_ids"
+                        widget="many2many_tags"
+                        attrs="{'column_invisible': [('parent.state', 'not in', ['waiting_for_approver','confirm','waiting_for_buyer'])]}"/>
+                
             </xpath>
         </field>
     </record>

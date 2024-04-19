@@ -30,7 +30,7 @@ class EthicsPurchaseRequest(models.Model):
     # Extendiendo el campo 'state' para agregar el nuevo estado
     state = fields.Selection(selection_add=[('waiting_for_audit', 'Esperando por Auditoría'),
                                                 ('waiting_for_buyer', "Esperando por Comprador")
-        ], ondelete={'waiting_for_audit': 'cascade'})
+        ], ondelete={'waiting_for_approver': 'cascade'})
     pr_lines = fields.One2many('purchase.request.line', 'pr_id', tracking=True)
 
     @api.onchange('vehicle_id')
@@ -159,6 +159,7 @@ class EthicsPurchaseRequest(models.Model):
                 'pr_ref_id': self.id,
                 'vehicle_id': self.vehicle_id.id,
                 'account_analytic_id': self.account_analytic_id.id,
+                'picking_type_id': self.picking_type_id.id,
                 'order_line': lines,
                 })
             purchase_orders.append(purchase_id.id)

@@ -24,6 +24,8 @@
                     - waiting_for_price_revision
                     - waiting_for_price_approval
                     - waiting_for_approval
+                    - waiting_for_audit
+                    - waiting_for_buyer
     """,
 
     'author': "Alconsoft",
@@ -33,7 +35,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '24.04.17 <15:>',
+    'version': '24.04.18 <21:52',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',
@@ -57,6 +59,7 @@
         'views/views_purchase_order.xml',
         'static/xls/project.costtype.csv',
         'static/xls/project.category.csv',
+        'views/view_purchase_approval_kanak.xml',
         ###############################
     ],
     # only loaded in demonstration mode
