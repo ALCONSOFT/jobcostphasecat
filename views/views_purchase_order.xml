@@ -47,7 +47,9 @@
                 </field>
             </field>
         </record>
+        <!-- ************************************************************-->
         <!-- Heredar la vista form de purchase.order.form.approval.rules -->
+        <!-- ************************************************************-->        
         <record id="purchase_order_form_approval_rules_jc" model="ir.ui.view">
             <field name="name">purchase.order.form.approval.rules.jc</field>
             <field name="model">purchase.order</field>
@@ -62,12 +64,12 @@
                     </attribute>
                     <attribute name='string'>Refrescar Reglas de Aprobación</attribute>
                 </xpath>
-                <!-- Cambiar los atributos del boton: action_send_for_approval-->
                 <!-- Cambiar los atributos del boton: action_rfq_send
                     <attribute name='attrs'>{'invisible': ['|', ('state','!=','draft'), ('purchase_order_approval_rule_ids', '!=', [])]} -->
                 <xpath expr="//button[@name='action_rfq_send']" position="attributes">
-                    <attribute name='attrs'>{'invisible': [('state','!=','draft') ]}
-                    </attribute> 
+                    <attribute name='attrs'>{'invisible': [('state','!=','draft') ]} </attribute>
+                    <attribute name="groups">jobcostphasecat.group_rfq_user</attribute>
+                    <attribute name="string">1.Enviar SdP e-mail</attribute>
                 </xpath>
                 <!-- Cambiar los atributos del boton: button_confirm-->
                 <xpath expr="//button[@name='button_confirm']" position="attributes">
@@ -84,55 +86,86 @@
                 <!-- Insertar boton: Envio para Revisión de Precio-->
                 <xpath expr="//button[@name='button_confirm']" position="before">
                     <button name="action_waiting_for_price_revision"
-                        string="Envío a Revisión de Precios" type="object"
-                        groups="base.group_user"
+                        string="2.Envío a Revisión de Precios" type="object"
+                        class="btn-primary oe_highlight"
+                        groups="jobcostphasecat.group_rfq_updater"
                         attrs="{'invisible': [('state', '!=', 'sent') ] }"
                     />
                 </xpath>
                 <!-- Insertar boton: Envio para Aprobación de Precio-->
                 <xpath expr="//button[@name='button_confirm']" position="before">
                     <button name="action_waiting_for_price_approval"
-                        string="Envío a Aprobación de Precios" type="object"
-                        groups="base.group_user"
+                        string="3.Envío a Aprobación de Precios" type="object"
+                        class="btn-primary oe_highlight"
+                        groups="jobcostphasecat.group_rfq_reviewer"
                         attrs="{'invisible': [('state', '!=', 'waiting_for_price_revision') ] }"
                     />
                     <button name="reject_waiting_for_price_revision"
                         string="Rechazo en Revisión de Precios" type="object"
-                        groups="base.group_user"
+                        groups="jobcostphasecat.group_rfq_reviewer"
                         attrs="{'invisible': [('state', '!=', 'waiting_for_price_revision') ] }"
                     />
                 </xpath>
                 <!-- Insertar boton: Envio para Aprobación de SdP -->
                 <xpath expr="//button[@name='button_confirm']" position="before">
                     <button name="action_waiting_for_approval"
-                        string="Envío a Aprobación de SdP" type="object"
-                        groups="base.group_user"
+                        string="4.Envío a Aprobación de SdP" type="object"
+                        class="btn-primary oe_highlight"
+                        groups="jobcostphasecat.group_rfq_price_approver"
                         attrs="{'invisible': [('state', '!=', 'waiting_for_price_approval') ] }"
                     />
                     <button name="reject_waiting_for_price_approval"
-                        string="Rechazo en Arpobación de Precios" type="object"
+                        string="Rechazo en Aprobación de Precios" type="object"
                         class="oe_buttom"
-                        groups="base.group_user"
+                        groups="jobcostphasecat.group_rfq_price_approver"
                         attrs="{'invisible': [('state', '!=', 'waiting_for_price_approval') ] }"
                     />
                 </xpath>
-                <!-- Insertar boton: Rechazar Aprobación de SdP -->
+
+                <!-- Insertar boton: Rechazar Aprobación de SdP y Envio a Aprobacion de Compras
+                        Este botón debe estar solo lectura hasta que se haya aprobado todas
+                        las reglas de aprobacion-->
                 <xpath expr="//button[@name='button_confirm']" position="before">
+                    <button name="action_send_to_approve_purchase"
+                        string="5.Envío a Aprob.@Compras" type="object"
+                        class="btn-primary oe_highlight"
+                        groups="jobcostphasecat.group_rfq_approver"
+                        attrs="{'invisible': [('state', '!=', 'waiting_for_approval'), ('send_for_approval', '=', True)]}"
+                    />
                     <button name="reject_waiting_for_approval"
                         string="Rechazo de Aprobación de SdP" type="object"
-                        groups="base.group_user"
+                        groups="jobcostphasecat.group_rfq_approver"
                         attrs="{'invisible': [('state', '!=', 'waiting_for_approval') ] }"
                     />
                 </xpath>
-                <!-- Cambio de atributos del botón: action_button_Approve -->
+                <!-- Cambio de atributos del botón: action_button_approve. -->
                 <xpath expr="//button[@name='button_confirm']" position="before">
                     <button name="action_buttom_approve_jc"
-                        string="Aprobación de SdP" type="object"
-                        groups="base.group_user"
+                        string="Aprobar SdP" type="object"
+                        groups="jobcostphasecat.group_rfq_approver"
                         attrs="{'invisible': [('state', '!=', 'waiting_for_approval') ] }"
                     />
                 </xpath>
-
+                <!-- Cambiar los atributos del boton: action_send_for_approval -->
+                <xpath expr="//button[@name='action_send_for_approval']" position="replace">
+                    <button name="action_send_for_approval" type="object" string="Enviar a Aprobac."
+                        groups="base.group_user" attrs="{'invisible': ['|', '|', '|', '|', '&amp;',
+                                            ('state','!=','draft'),
+                                            ('send_for_approval','=',True), '&amp;',
+                                            ('state','=','draft'),
+                                            ('send_for_approval','=',True), '&amp;',
+                                            ('state','!=','draft'),
+                                            ('send_for_approval','!=',True),
+                                            '|', ('purchase_order_approval', '=', False),
+                                            ('purchase_order_approval_rule_id', '=', False),
+                                            ('purchase_order_approval_rule_ids', '=', [])]}" />
+                </xpath>
+                <!-- Cambiar los atributos del boton: button_approve -->
+                <xpath expr="//button[@name='button_approve']" position="attributes">
+                    <attribute name="string">6.Confirmar</attribute>
+                    <attribute name='attrs'>{'invisible': [('state','!=','to approve') ]} </attribute>
+                    <attribute name="groups">jobcostphasecat.group_rfq_confirn</attribute>
+                </xpath>
             </field>
         </record>
 

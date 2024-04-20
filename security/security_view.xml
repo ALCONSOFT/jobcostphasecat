@@ -33,6 +33,46 @@
             <field name="implied_ids" eval="[(4, ref('jobcostphasecat.group_request_buyer'))]"/>
             <field name="users" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
         </record>
-
+        <!-- ***********************************************-->
+        <!-- Categorias de Aprobación de Compras por Almacén-->
+        <!-- ***********************************************-->        
+        <record model="ir.module.category" id="module_category_rfq">
+            <field name="name">RfQ - SdP - Aprobaciónde Solicitud de Presupuestos</field>
+        </record>
+        <!-- Usuario o Enviador de correos-->
+        <record id="group_rfq_user" model="res.groups">
+            <field name="name">1.Usuari@</field>
+            <field name="category_id" ref="module_category_rfq"/>
+        </record>
+        <!-- Actualizador de Precios-->
+        <record id="group_rfq_updater" model="res.groups">
+            <field name="name">2.Actualizador@</field>
+            <field name="category_id" ref="module_category_rfq"/>
+        </record>
+        <!-- Revisor de Precios-->
+        <record id="group_rfq_reviewer" model="res.groups">
+            <field name="name">3.Revisor@</field>
+            <field name="category_id" ref="module_category_rfq"/>
+        </record>
+        <!-- Aprobador de Precios-->
+        <record id="group_rfq_price_approver" model="res.groups">
+            <field name="name">4.Aprobador@ de Precios</field>
+            <field name="category_id" ref="module_category_rfq"/>
+        </record>
+        <!-- Aprobador de SdP-->
+        <record id="group_rfq_approver" model="res.groups">
+            <field name="name">5.Aprobador@ de SdP</field>
+            <field name="category_id" ref="module_category_rfq"/>
+        </record>
+        <!-- Confirmador de SdP-->
+        <record id="group_rfq_confirn" model="res.groups">
+            <field name="name">6.Confirmador@</field>
+            <field name="category_id" ref="module_category_rfq"/>
+        </record>
+        <!-- Enviador de P.O.-->
+        <record id="group_rfq_sender_po" model="res.groups">
+            <field name="name">7.Enviador@ de P.O.</field>
+            <field name="category_id" ref="module_category_rfq"/>
+        </record>
     </data>
 </odoo>
