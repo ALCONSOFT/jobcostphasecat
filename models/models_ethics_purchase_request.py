@@ -327,6 +327,11 @@ class PurchaseOrders(models.Model):
     def action_waiting_for_approval(self):
         for rec in self:
             rec.state = 'waiting_for_approval'
+    # Boton en envio a Aprobacion SdP por Compras
+    def action_send_to_approve_purchase(self):
+        for rec in self:
+            rec.state = 'to approve'
+    # Botón en envio a 
     
     # Boton Rechazar Aprobación de SdP = Rechazar Pedido
     def reject_waiting_for_approval(self):
@@ -338,7 +343,8 @@ class PurchaseOrders(models.Model):
     
     def action_buttom_approve_jc(self):
         for record in self:
-            record.state = 'to approve'
+            #record.state = 'to approve'
+            print('Estado actual: ', record.state)
         # Llamada al método reject_purchase de la clase base usando super()
         super(PurchaseOrders, self).action_button_approve()
 
