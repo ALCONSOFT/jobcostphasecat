@@ -28,8 +28,8 @@ class EthicsPurchaseRequest(models.Model):
         'stock.picking.type', 'Operation Type', required=True, default=_default_picking_type_id,
         domain="['|',('warehouse_id', '=', False), ('warehouse_id.company_id', '=', company_id)]", tracking=True)
     # Extendiendo el campo 'state' para agregar el nuevo estado
-    state = fields.Selection(selection_add=[('waiting_for_audit', 'Esperando por Auditoría'),
-                                                ('waiting_for_buyer', "Esperando por Comprador")
+    state = fields.Selection(selection_add=[('waiting_for_audit', 'Esperando Auditoría'),
+                                                ('waiting_for_buyer', "Esperando Comprador")
         ], ondelete={'waiting_for_approver': 'cascade'})
     pr_lines = fields.One2many('purchase.request.line', 'pr_id', tracking=True)
 
@@ -295,11 +295,17 @@ class PurchaseOrders(models.Model):
     vehicle_id = fields.Many2one('fleet.vehicle', string='Vehicle', index='btree_not_null')
     account_analytic_id = fields.Many2one('account.analytic.account', readonly=False, string='Cuenta Analítica')
     # Extendiendo el campo 'state' para agregar el nuevos estados
-    state = fields.Selection(selection_add=[('waiting_for_price_revision', 'Esperando por Revisión de Precios'),
-                                            ('waiting_for_price_approval','Esperando por Aprobación de Precios'),
-                                            ('waiting_for_approval','Esperando por Aprobación'),
+    state = fields.Selection(selection_add=[('waiting_for_price_revision', 'Esperando Revisión Precios'),
+                                            ('waiting_for_price_approval','Esperando Aprobación Precios'),
+                                            ('waiting_for_approval','Esperando Aprobación'),
                                             ('to approve','Por Aprobar @ Compras')
         ], ondelete={'waiting_for_approval': 'cascade'})
+
+    # Boton Enviar P.O. por email
+    def action_rfq_send_jc(self):
+        for rec in self:
+            rec.state = 'done'
+        super(PurchaseOrders, self).action_rfq_send()
 
     # Botones en waiting_for_price_revision
     def action_waiting_for_price_revision(self):

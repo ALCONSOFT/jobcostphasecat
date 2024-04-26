@@ -110,6 +110,22 @@
             <xpath expr="//field[@name='priority']" position="after">
                 <field name="sequence_alter"/>
             </xpath>
+            <xpath expr="//field[@name='state']" position="replace">
+                <field name="state"
+                    string="Estatus"
+                    widget="badge"
+                    decoration-info="state in ['draft']"
+                    decoration-success="state in ['confirm']"
+                    decoration-warning="state in ['waiting_for_verifier', 'waiting_for_audit']"
+                    decoration-danger="state in ['waiting_for_buyer', 'waiting_for_approver']"
+                    decoration-muted="state in ['cancel']"
+                    decoration-it="state in ['waiting_for_buyer', 'waiting_for_verifier']" />
+            </xpath>
+                           
+            <xpath expr="//field[@name='employee_id']" position="replace">
+                <field name="employee_id"
+                    widget="many2one_avatar_user" />
+            </xpath>
         </field>
     </record>
 
