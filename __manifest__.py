@@ -26,6 +26,7 @@
                     - waiting_for_approval
                     - waiting_for_audit
                     - waiting_for_buyer
+                - Agregando colores a los estados agregados
     """,
 
     'author': "Alconsoft",
@@ -35,7 +36,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '24.04.19 <22:09',
+    'version': '24.04.24 <19:57>',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',
