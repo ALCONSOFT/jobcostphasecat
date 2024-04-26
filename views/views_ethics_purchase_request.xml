@@ -17,9 +17,14 @@
             <!-- Reemplazamos el botón original con uno nuevo -->
             <xpath expr="//button[@name='action_confirm']" position="replace">
                 <button name="action_confirm_ethics"
-                        string="Confirm" class="btn-primary" type="object"
+                        string="Aprobar SdC" class="btn-primary" type="object"
                         attrs="{'invisible': [('state', '!=', 'waiting_for_approver')]}"
                         groups="ethics_purchase_request.group_request_approver"/>
+                <button name="reject_approver_pr"
+                        string="Rechazar SdC" type="object" class='oe_highlight'
+                        attrs="{'invisible': [('state', '!=', 'waiting_for_approver')]}"
+                        groups="jobcostphasecat.group_request_approver"/>                        
+                    
             </xpath>
                         <!-- Insertar modificaciones después del campo priority -->
             <xpath expr="//field[@name='priority']" position="after">
@@ -30,26 +35,64 @@
             </xpath>
 
             <xpath expr="//field[@name='state']" position="attributes">
-                <attribute name="statusbar_visible">draft,waiting_for_verifier,waiting_for_audit,waiting_for_approver,confirm,cancel</attribute>
+                <attribute name="statusbar_visible">draft,
+                        waiting_for_verifier,
+                        waiting_for_audit,
+                        waiting_for_buyer,
+                        waiting_for_approver,
+                        confirm,
+                        cancel</attribute>
             </xpath>
             <xpath expr="//button[@name='action_submit_for_approver']" position="before">
                 <button name="action_waiting_for_audit"
                         string="Enviar a Auditoría" class="btn-primary" type="object"
                         attrs="{'invisible': [('state', '!=', 'waiting_for_verifier')]}"
-                        groups="ethics_purchase_request.group_request_approver"/>
+                        groups="ethics_purchase_request.group_request_verifier"/>
+            </xpath>
+            <!-- Auditor envia al comprador -->
+            <xpath expr="//button[@name='action_submit_for_approver']" position="before">
+                <button name="action_submit_for_audit"
+                        string="Enviar a Compras" class="btn-primary" type="object"
+                        attrs="{'invisible': [('state', '!=', 'waiting_for_audit')]}"
+                        groups="jobcostphasecat.group_request_auditor"
+                        />
                 <button name="reject_audit_pr"
                         string="Rechazar por Auditoría" class="btn-primary" type="object"
                         attrs="{'invisible': [('state', '!=', 'waiting_for_audit')]}"
-                        groups="ethics_purchase_request.group_request_approver"/>                        
+                        groups="jobcostphasecat.group_request_auditor"/>
             </xpath>
+            <!-- Comprador envia al gerente -->
             <xpath expr="//button[@name='action_submit_for_approver']" position="replace">
                 <button name="action_submit_for_approver"
-                        string="Enviar para Aprobación" class="btn-primary" type="object"
-                        attrs="{'invisible': [('state', '!=', 'waiting_for_audit')]}"
-                        groups="ethics_purchase_request.group_request_verifier"/>
-
+                        string="Enviar a Aprobación" class="btn-primary" type="object"
+                        attrs="{'invisible': [('state', '!=', 'waiting_for_buyer')]}"
+                        groups="jobcostphasecat.group_request_buyer"/>
             </xpath>
-
+            <xpath expr="//button[@name='reject_approver_pr']" position="replace">
+                <button name="reject_approver_pr"
+                        string="Rechazar SdC" type="object" class='oe_highlight'
+                        attrs="{'invisible': [('state', '!=', 'waiting_for_buyer')]}"
+                        groups="jobcostphasecat.group_request_buyer"/>                        
+            </xpath>
+            <xpath expr="//button[@name='action_submit_for_verifier']" position="replace">
+                <button name="action_submit_for_verifier_jc"
+                        string="Enviar a Verificar" class="btn-primary" type="object"
+                        attrs="{'invisible': [('state', '!=', 'draft')]}"
+                        groups="ethics_purchase_request.group_request_verifier"/>
+            </xpath>
+            <xpath expr="//button[@name='reject_verifier_pr']" position="replace">            
+                <button name="reject_verifier_pr_jc"
+                        string="Rechazar" type="object" class='oe_highlight'
+                        attrs="{'invisible': [('state', '!=', 'waiting_for_verifier')]}"
+                        groups="ethics_purchase_request.group_request_verifier"/>
+            </xpath>
+            <!-- Cambiar el campo vendor_ids; para que tambien el cpomrador pueda agregar los vendors-->
+            <xpath expr="//field[@name='vendor_ids']" position="replace">
+                <field name="vendor_ids"
+                        widget="many2many_tags"
+                        attrs="{'column_invisible': [('parent.state', 'not in', ['waiting_for_approver','confirm','waiting_for_buyer'])]}"/>
+                
+            </xpath>
         </field>
     </record>
     
@@ -66,6 +109,22 @@
             </xpath>
             <xpath expr="//field[@name='priority']" position="after">
                 <field name="sequence_alter"/>
+            </xpath>
+            <xpath expr="//field[@name='state']" position="replace">
+                <field name="state"
+                    string="Estatus"
+                    widget="badge"
+                    decoration-info="state in ['draft']"
+                    decoration-success="state in ['confirm']"
+                    decoration-warning="state in ['waiting_for_verifier', 'waiting_for_audit']"
+                    decoration-danger="state in ['waiting_for_buyer', 'waiting_for_approver']"
+                    decoration-muted="state in ['cancel']"
+                    decoration-it="state in ['waiting_for_buyer', 'waiting_for_verifier']" />
+            </xpath>
+                           
+            <xpath expr="//field[@name='employee_id']" position="replace">
+                <field name="employee_id"
+                    widget="many2one_avatar_user" />
             </xpath>
         </field>
     </record>

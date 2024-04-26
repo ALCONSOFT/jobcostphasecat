@@ -24,6 +24,9 @@
                     - waiting_for_price_revision
                     - waiting_for_price_approval
                     - waiting_for_approval
+                    - waiting_for_audit
+                    - waiting_for_buyer
+                - Agregando colores a los estados agregados
     """,
 
     'author': "Alconsoft",
@@ -33,7 +36,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '24.04.12 16:4440',
+    'version': '24.04.24 <19:57>',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',
@@ -46,6 +49,7 @@
     # IMPORTANTE: SE QUITA EL CARACTER "#" PARA QUE SE PUEDA CARGAR ARCHIVO CON LA LISTA DE ACCESO DE SEGURIDAD
     'data': [
         ####### ESTO IMPEDIA QUE SE PUDIERA VER EL MENU ########################
+        'security/security_view.xml',
         'security/ir.model.access.csv',
         ###############################
         'views/views2.xml',
@@ -56,6 +60,7 @@
         'views/views_purchase_order.xml',
         'static/xls/project.costtype.csv',
         'static/xls/project.category.csv',
+        'views/view_purchase_approval_kanak.xml',
         ###############################
     ],
     # only loaded in demonstration mode
