@@ -26,7 +26,7 @@
                         groups="jobcostphasecat.group_request_approver"/>                        
                     
             </xpath>
-                        <!-- Insertar modificaciones después del campo priority -->
+            <!-- Insertar modificaciones después del campo priority -->
             <xpath expr="//field[@name='priority']" position="after">
                 <!-- Aquí añades el nuevo campo o la modificación deseada. 
                         Por ejemplo, añadir un campo llamado 'sequence_alter'. -->
@@ -43,6 +43,21 @@
                         confirm,
                         cancel</attribute>
             </xpath>
+            <!-- Usuario envia a Verificador-->
+            <xpath expr="//button[@name='action_submit_for_verifier']" position="replace">
+                <button name="action_submit_for_verifier_jc"
+                        string="Enviar a Verificar" class="btn-primary" type="object"
+                        attrs="{'invisible': [('state', '!=', 'draft')]}"
+                        groups="ethics_purchase_request.group_request_user"/>
+            </xpath>
+            <xpath expr="//button[@name='reject_verifier_pr']" position="replace">            
+                <button name="reject_verifier_pr_jc"
+                        string="Rechazar" type="object" class='oe_highlight'
+                        attrs="{'invisible': [('state', '!=', 'waiting_for_verifier')]}"
+                        groups="ethics_purchase_request.group_request_user"/>
+            </xpath>
+
+            <!-- Verificador envia a Auditor-->
             <xpath expr="//button[@name='action_submit_for_approver']" position="before">
                 <button name="action_waiting_for_audit"
                         string="Enviar a Auditoría" class="btn-primary" type="object"
@@ -74,19 +89,7 @@
                         attrs="{'invisible': [('state', '!=', 'waiting_for_buyer')]}"
                         groups="jobcostphasecat.group_request_buyer"/>                        
             </xpath>
-            <xpath expr="//button[@name='action_submit_for_verifier']" position="replace">
-                <button name="action_submit_for_verifier_jc"
-                        string="Enviar a Verificar" class="btn-primary" type="object"
-                        attrs="{'invisible': [('state', '!=', 'draft')]}"
-                        groups="ethics_purchase_request.group_request_verifier"/>
-            </xpath>
-            <xpath expr="//button[@name='reject_verifier_pr']" position="replace">            
-                <button name="reject_verifier_pr_jc"
-                        string="Rechazar" type="object" class='oe_highlight'
-                        attrs="{'invisible': [('state', '!=', 'waiting_for_verifier')]}"
-                        groups="ethics_purchase_request.group_request_verifier"/>
-            </xpath>
-            <!-- Cambiar el campo vendor_ids; para que tambien el cpomrador pueda agregar los vendors-->
+            <!-- Cambiar el campo vendor_ids; para que tambien el comprador pueda agregar los vendors-->
             <xpath expr="//field[@name='vendor_ids']" position="replace">
                 <field name="vendor_ids"
                         widget="many2many_tags"
