@@ -10,6 +10,7 @@
                 <xpath expr="//field[@name='invoice_status']" position="after">
                     <field name="vehicle_id" optional="show"/>
                     <field name="account_analytic_id" optional="show"/>
+                    <field name="pr_ref_id" optional="show"/>
                 </xpath>
                 <!-- Agregando colores a los estados agregados
                                         <field name="state" optional="show" widget="badge" decoration-success="state == 'purchase' or state == 'done'" decoration-warning="state == 'to approve'" decoration-info="state == 'draft' or state == 'sent'"/>-->
@@ -61,15 +62,13 @@
                 </field>
             </field>
         </record>
-        <!-- ************************************************************-->
-        <!-- Heredar la vista form de purchase.order.form.approval.rules -->
-        <!-- ************************************************************-->        
+        <!-- Heredar la vista form de purchase.order.form -->
         <record id="purchase_order_form_approval_rules_jc" model="ir.ui.view">
             <field name="name">purchase.order.form.approval.rules.jc</field>
             <field name="model">purchase.order</field>
-            <field name="inherit_id" ref="purchase_approval_kanak.purchase_order_form_approval_rules"/>
+            <field name="inherit_id" ref="purchase.purchase_order_form"/>
             <field name="arch" type="xml">
-                <!-- Cambiar atributos del boton Refresh & Apporval-->
+                <!-- Cambiar atributos del boton Refresh & Apporval
                 <xpath expr="//button[@name='action_refresh_order']" position="attributes">
                     <attribute name='attrs'>{'invisible': ['|', ('state','!=','waiting_for_price_revision'),
                                              ('state','!=','draft'),
@@ -78,6 +77,7 @@
                     </attribute>
                     <attribute name='string'>Refrescar Reglas de Aprobación</attribute>
                 </xpath>
+                -->
                 <!-- Cambiar los atributos del boton: action_rfq_send
                     <attribute name='attrs'>{'invisible': ['|', ('state','!=','draft'), ('purchase_order_approval_rule_ids', '!=', [])]} -->
                 <xpath expr="//button[@name='action_rfq_send']" position="replace">
@@ -98,16 +98,17 @@
                 </xpath>
                 <!-- Cambiar los atributos del boton: button_confirm-->
                 <xpath expr="//button[@name='button_confirm']" position="attributes">
-                    <attribute name='attrs'>{'invisible': ['|', ('state','!=','waiting_for_approval'), ('purchase_order_approval_rule_ids', '!=', [])]}
+                    <attribute name='attrs'>{'invisible': ['|', ('state','!=','waiting_for_approval')]}
                     </attribute>
                     <attribute name="string">Confirmar Pedido</attribute>
                 </xpath>
-                <!-- Cambiar atributos del boton: reject_purchase (rechazo en Aprobación)-->
+                <!-- Cambiar atributos del boton: reject_purchase (rechazo en Aprobación)
                 <xpath expr="//button[@name='reject_purchase']" position="attributes">
                     <attribute name='attrs'>{'invisible': ['|', ('state','!=','waiting_for_approval'), ('purchase_order_approval_rule_ids', '!=', [])]}
                     </attribute>
                     <attribute name="string">Rechazar Pedido</attribute>
                 </xpath>
+                -->
                 <!-- Insertar boton: Envio para Revisión de Precio-->
                 <xpath expr="//button[@name='button_confirm']" position="before">
                     <button name="action_waiting_for_price_revision"
@@ -176,7 +177,7 @@
                 <xpath expr="//button[@name='action_rfq_send']" position="before">
                 </xpath>
 
-                <!-- Cambiar los atributos del boton: action_send_for_approval -->
+                <!-- Cambiar los atributos del boton: action_send_for_approval 
                 <xpath expr="//button[@name='action_send_for_approval']" position="replace">
                     <button name="action_send_for_approval" type="object" string="Enviar a Aprobac."
                         groups="base.group_user" attrs="{'invisible': ['|', '|', '|', '|', '&amp;',
@@ -190,6 +191,7 @@
                                             ('purchase_order_approval_rule_id', '=', False),
                                             ('purchase_order_approval_rule_ids', '=', [])]}" />
                 </xpath>
+                -->
                 <!-- Cambiar los atributos del boton: button_approve -->
                 <xpath expr="//button[@name='button_approve']" position="attributes">
                     <attribute name="string">6.Confirmar</attribute>
@@ -198,6 +200,19 @@
                 </xpath>
             </field>
         </record>
-
+        <!-- Heredar las busquedas de purchase.order-->
+        <record id="purchase_order_pr_ref_id_filter" model="ir.ui.view">
+            <field name="name">purchase.order.pr.ref.id.filter</field>
+            <field name="model">purchase.order</field>
+            <field name="inherit_id" ref="purchase.view_purchase_order_filter"/>
+            <field name="arch" type="xml">
+                <xpath expr="//search" position="inside">
+                    <!--
+                    <filter string="PR Reference ID" name="filter_pr_ref_id" domain="[('pr_ref_id', 'ilike', self)]"/>
+                    -->
+                    <field name="pr_ref_id" />
+                </xpath>
+            </field>
+        </record>
     </data>
 </odoo>

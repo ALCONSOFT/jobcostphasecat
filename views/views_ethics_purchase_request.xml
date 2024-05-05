@@ -55,6 +55,9 @@
                         string="Rechazar" type="object" class='oe_highlight'
                         attrs="{'invisible': [('state', '!=', 'waiting_for_verifier')]}"
                         groups="ethics_purchase_request.group_request_user"/>
+                <button name="reject_verifier_pr_jc"
+                        string="Enviar a Borrador" type="object" class='oe_highlight'
+                        groups="ethics_purchase_request.group_request_user"/>
             </xpath>
 
             <!-- Verificador envia a Auditor-->
@@ -143,5 +146,5 @@
             </xpath>
         </field>
     </record>
- 
+
 </odoo>

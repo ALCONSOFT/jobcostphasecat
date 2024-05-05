@@ -19,7 +19,6 @@ class EthicsPurchaseRequest(models.Model):
                 body=_('SdC: ' + self.name + ' enviada a Auditoría.')
             )
 
-
     def _default_picking_type_id(self):
         return self.env['stock.picking.type'].search([('warehouse_id.company_id', '=', self.env.company.id), ('code', '=', 'incoming')], limit=1)
 
@@ -35,6 +34,20 @@ class EthicsPurchaseRequest(models.Model):
                                                 ('waiting_for_buyer', "Esperando Comprador")
         ], ondelete={'waiting_for_approver': 'cascade'})
     pr_lines = fields.One2many('purchase.request.line', 'pr_id', tracking=True)
+
+    def action_last_7_days_requests(self):
+        today = fields.Date.context_today(self)
+        date_from = today - timedelta(days=6)
+
+        action = {
+            'type': 'ir.actions.act_window',
+            'name': 'Last 7 Days Requests',
+            'view_mode': 'tree,form',
+            'res_model': 'purchase.request',
+            'domain': [('request_date', '>=', date_from), ('request_date', '<=', today)],
+            'context': {'default_request_date': today},
+        }
+        return action
 
     @api.onchange('vehicle_id')
     def _onchange_vehicle_id(self):

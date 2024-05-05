@@ -27,6 +27,7 @@
                     - waiting_for_audit
                     - waiting_for_buyer
                 - Agregando colores a los estados agregados
+                - Agregando vista kanban al modelo purchase.request
     """,
 
     'author': "Alconsoft",
@@ -36,14 +37,14 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '24.04.26 <20:14>',
+    'version': '24.05.04 <15:40>',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',
                 'stock_analytic',
                 'ethics_purchase_request',
                 'purchase',
-                'purchase_approval_kanak'],
+                ],
 
     # always loaded: Aqui se cargan los formularios de vista.
     # IMPORTANTE: SE QUITA EL CARACTER "#" PARA QUE SE PUEDA CARGAR ARCHIVO CON LA LISTA DE ACCESO DE SEGURIDAD
@@ -60,7 +61,8 @@
         'views/views_purchase_order.xml',
         'static/xls/project.costtype.csv',
         'static/xls/project.category.csv',
-        'views/view_purchase_approval_kanak.xml',
+        #'views/view_purchase_approval_kanak.xml',
+        'views/news_views.xml'
         ###############################
     ],
     # only loaded in demonstration mode

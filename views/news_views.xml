@@ -1,0 +1,127 @@
+<odoo>
+    <data>
+        <!-- Agregando boton Ultimos 7 dias-->
+        <record id="purchase_request_action_last_7_days" model="ir.actions.server">
+            <field name="name">Last 7 Days Requests</field>
+            <field name="model_id" ref="ethics_purchase_request.model_purchase_request"/>
+            <field name="binding_model_id" ref="ethics_purchase_request.model_purchase_request"/>
+            <field name="state">code</field>
+            <field name="code">
+                action = model.action_last_7_days_requests()
+            </field>
+        </record>    
+        <!-- agregando busqueda por paraemtro: purchase_count-->
+        <record id="view_purchase_request_search_inherit" model="ir.ui.view">
+            <field name="inherit_id" ref="ethics_purchase_request.view_purchase_request_search"/>
+            <field name="model">purchase.request</field>
+            <field name="arch" type="xml">
+                <xpath expr="//search" position="inside">
+                    <!-- Agregar filtro sugerido para purchase_count -->
+                    <filter string="Purchase Count" name="purchase_count_filter" domain="[]" context="{'group_by': 'purchase_count'}"/>
+                </xpath>
+                <xpath expr="//filter[last()]" position="after">
+                    <!-- Agregar separador después del último filtro si es necesario -->
+                    <separator/>
+                    <!-- Agregar búsqueda sugerida por purchase_count -->
+                    <field name="purchase_count" filter_domain="['|', ('purchase_count', '=', self), ('purchase_count', 'ilike', self)]"/>
+                </xpath>
+                <xpath expr="//search" position="inside">
+                    <!-- Filtro para almacen (warehouse_id) -->
+                    <filter string="Warehouse" name="filter_warehouse" domain="[]" context="{'group_by': 'warehouse_id'}"/>
+                    
+                    <!-- Filtro para sequence_alter -->
+                    <filter string="Sequence Alter" name="filter_sequence_alter" domain="[]" context="{'group_by': 'sequence_alter'}"/>
+                </xpath>
+                <xpath expr="//search" position="inside">
+                    <!-- Filtro para request_date igual al día actual -->
+                    <filter string="SdC de Hoy"
+                        name="today_requests"
+                        domain="[('request_date', '=', context_today())]"
+                        help="Show requests of today."/>
+                </xpath>
+
+            </field>
+        </record>
+        <!-- agregando vista Kanban para modelo: purchase.request-->
+        <record id="view_purchase_request_kanban" model="ir.ui.view">
+            <field name="name">purchase.request.kanban</field>
+            <field name="model">purchase.request</field>
+            <field name="arch" type="xml">
+                <kanban default_group_by="state" default_filter="no_purchases" class="o_kanban_small_column">
+                    <field name="state"/>
+                    <templates>
+                        <t t-name="kanban-box">
+                            <div class="oe_kanban_global_click o_kanban_card">
+                                <div class="o_kanban_card_header">
+                                    <div class="o_kanban_card_header_title">
+                                        <span class="o_kanban_record_title oe_partner_heading">
+                                            <field name="name"/>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="o_kanban_card_content" style="font-size:13px;">
+                                    <div>
+                                        <i class="fa fa-user-o"/>
+                                        <field name="employee_id" options="{'no_open': True}"/>
+                                    </div>
+                                    <div>
+                                        <i class="fa fa-building-o"/>
+                                        <field name="department_id" options="{'no_open': True}"/>
+                                    </div>
+                                    <div>
+                                        <i class="fa fa-calendar"/>
+                                        <field name="request_date"/>
+                                    </div>
+                                    <div>
+                                        <strong>Priority:</strong>
+                                        <field name="priority"/>
+                                    </div>
+                                </div>
+                                <div class="oe_kanban_global">
+                                    <div>
+                                        <strong>Almacén: </strong>
+                                        <field name="warehouse_id"/>
+                                    </div>
+                                    <div>
+                                        <strong>Secuencia: </strong>
+                                        <field name="sequence_alter"/>
+                                    </div>
+                                    <div>
+                                        <strong>Descripción: </strong>
+                                        <field name="description"/>
+                                    </div>
+                                    <div>
+                                        <strong>Detalle de SdC: </strong>
+                                        <field name="pr_lines"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </templates>
+                </kanban>
+            </field>
+        </record>    
+
+        <record id="action_purchase_request" model="ir.actions.act_window">
+            <field name="name">Purchase Request Kanban</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">purchase.request</field>
+            <field name="view_mode">kanban,tree,form</field>
+            <field name="search_view_id" ref="ethics_purchase_request.view_purchase_request_search"/>
+        </record>
+
+        <menuitem id="purchase_request_menu_kanban"
+            name="SdC - Kanban"
+            action="action_purchase_request"
+            groups="ethics_purchase_request.group_request_user"
+            parent="purchase.menu_procurement_management"/>
+        
+        
+        <!--
+        <record id="jobcostpjasecat.action_purchase_request" model="ir.actions.act_window" inherit_id="ethics_purchase_request.action_purchase_request">
+            <field name="view_mode">tree,form,kanban</field>
+            <field name="views" eval="[(5, 0, 0), (ref('ethics_purchase_request.view_purchase_request_tree'), 'tree'), (ref('ethics_purchase_request.view_purchase_request_form'), 'form'), (ref('jobcostpjasecat.view_purchase_request_kanban'), 'kanban')]"/>
+        </record>
+        -->
+    </data>
+</odoo>
