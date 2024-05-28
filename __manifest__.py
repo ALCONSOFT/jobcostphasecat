@@ -37,7 +37,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '24.05.04 <15:40>',
+    'version': '24.05.27 <10:03>',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',
@@ -62,7 +62,8 @@
         'static/xls/project.costtype.csv',
         'static/xls/project.category.csv',
         #'views/view_purchase_approval_kanak.xml',
-        'views/news_views.xml'
+        'views/news_views.xml',
+        'views/res_company_view.xml'
         ###############################
     ],
     # only loaded in demonstration mode

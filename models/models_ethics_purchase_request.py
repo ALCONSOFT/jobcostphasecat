@@ -51,7 +51,12 @@ class EthicsPurchaseRequest(models.Model):
 
     @api.onchange('vehicle_id')
     def _onchange_vehicle_id(self):
+        # Verifica si vehicle_id existe y es válido antes de proceder
+        if not self.vehicle_id or not hasattr(self.vehicle_id, 'id'):
+            print("Vehicle ID no es válido o no existe.")
+            return False
 
+        # Si vehicle_id es válido, procede con la creación del diccionario
         valores_defaults_vehicle = {
             'user_id': self.env.user.id,
             'clave_valor': self.vehicle_id.id,
@@ -59,17 +64,19 @@ class EthicsPurchaseRequest(models.Model):
             'modelo_usado': self._name
         }
         print('valores_defaults_vehicle', valores_defaults_vehicle)
+
         # Verifica si algún valor en el diccionario es False
         tiene_false = any(valor is False for valor in valores_defaults_vehicle.values())
 
         if tiene_false:
             print("Hay al menos un valor False en el diccionario.")
-            print("No se registrara nada")
+            print("No se registrará nada")
         else:
-            print("No hay valores False en el diccionario.")        
+            print("No hay valores False en el diccionario.")
             nuevo_registro = self.env['valores.defaults'].crear_registro(valores_defaults_vehicle)
+
         return False
-    
+
     @api.onchange('account_analytic_id')
     def _onchange_account_analytic_id(self):
 
