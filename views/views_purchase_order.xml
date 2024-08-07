@@ -98,7 +98,7 @@
                 </xpath>
                 <!-- Cambiar los atributos del boton: button_confirm-->
                 <xpath expr="//button[@name='button_confirm']" position="attributes">
-                    <attribute name='attrs'>{'invisible': ['|', ('state','!=','waiting_for_approval')]}
+                    <attribute name='attrs'>{'invisible': [('state','!=','waiting_for_approval')]}
                     </attribute>
                     <attribute name="string">Confirmar Pedido</attribute>
                 </xpath>
