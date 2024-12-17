@@ -63,7 +63,7 @@
         'static/xls/project.category.csv',
         #'views/view_purchase_approval_kanak.xml',
         'views/news_views.xml',
-        'views/res_company_view.xml'
+        'views/res_company_view.xml',
         ###############################
     ],
     # only loaded in demonstration mode
