@@ -28,6 +28,7 @@
                     - waiting_for_buyer
                 - Agregando colores a los estados agregados
                 - Agregando vista kanban al modelo purchase.request
+                - Arreglando vista Form heredada que no funcionaba - purchase.request.form.inherit.ethicspr
     """,
 
     'author': "Alconsoft",
@@ -37,7 +38,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '24.08.07',
+    'version': '24.12.18',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',
