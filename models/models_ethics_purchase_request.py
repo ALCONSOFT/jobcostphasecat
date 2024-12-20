@@ -19,16 +19,49 @@ class EthicsPurchaseRequest(models.Model):
                 body=_('SdC: ' + self.name + ' enviada a Auditoría.')
             )
 
-    def _default_picking_type_id(self):
-        return self.env['stock.picking.type'].search([('warehouse_id.company_id', '=', self.env.company.id), ('code', '=', 'incoming')], limit=1)
-
     vehicle_id = fields.Many2one('fleet.vehicle', string='Vehículo', index='btree_not_null', tracking=True)
-    account_analytic_id = fields.Many2one('account.analytic.account', string='Cuenta Analítica', readonly=False, tracking=True)
-    warehouse_id = fields.Many2one('stock.warehouse', string='Almacén', domain="[('company_id', '=', company_id)]", required=True, readonly=False)
+    warehouse_id = fields.Many2one('stock.warehouse', string='Almacén',
+        domain="[('company_id', '=', company_id)]", required=True, readonly=False)    
     sequence_alter = fields.Char(string='Secuencia Alterna', readonly=True, index=True, rerquired=True)
+    #def _default_picking_type_id(self):
+        #return self.env['stock.picking.type'].search([('warehouse_id.company_id', '=', self.env.company.id), ('code', '=', 'incoming')], limit=1)
+    def _default_picking_type_id(self):
+        """Busca el tipo de operación predeterminado basado en el almacén del usuario
+        y se asegura de que sea consistente con la cuenta analítica del almacén."""
+        # Buscar el almacén predeterminado asignado al usuario actual
+        user_warehouse = self.env.user.property_warehouse_id  # Asume un campo personalizado en res.users
+        if not user_warehouse:
+            # Si no hay almacén predeterminado para el usuario, usa el primero disponible
+            user_warehouse = self.env['stock.warehouse'].search(
+                [('company_id', '=', self.env.company.id)], 
+                limit=1
+            )
+        # Buscar el tipo de operación 'incoming' relacionado con el almacén
+        picking_type = self.env['stock.picking.type'].search(
+            [('warehouse_id', '=', user_warehouse.id), ('code', '=', 'incoming')], 
+            limit=1
+        )
+
+        return picking_type
+
     picking_type_id = fields.Many2one(
         'stock.picking.type', 'Operation Type', required=True, default=_default_picking_type_id,
         domain="['|',('warehouse_id', '=', False), ('warehouse_id.company_id', '=', company_id)]", tracking=True)
+
+    def _default_account_analytic_id(self):
+        picking_type = self._default_picking_type_id()
+        """Obtiene la cuenta analítica predeterminada basada en el almacén relacionado con el tipo de operación."""
+        if picking_type:
+            account_analytic_id = picking_type.warehouse_id.account_analytic_id
+            return account_analytic_id.id if account_analytic_id else False
+        return False
+
+    account_analytic_id = fields.Many2one('account.analytic.account',
+        string='Cuenta Analítica',
+        readonly=False,
+        default =_default_account_analytic_id,
+        tracking=True)
+
     # Extendiendo el campo 'state' para agregar el nuevo estado
     state = fields.Selection(selection_add=[('waiting_for_audit', 'Esperando Auditoría'),
                                                 ('waiting_for_buyer', "Esperando Comprador")
@@ -194,7 +227,23 @@ class EthicsPurchaseRequest(models.Model):
     def _onchange_warehouse(self):
         if self.warehouse_id:
             self.sequence_alter = self._get_sequence(self.warehouse_id.id)
-        return 
+            # Cambia Cuenta Analitica
+            self.account_analytic_id = self.warehouse_id.account_analytic_id
+            # Cambiar picking_type_id - Recepcion
+            # Buscar el almacén seleccionado actual
+            _warehouse = self.warehouse_id
+            if not _warehouse:
+                # Si no hay almacén predeterminado para el usuario, usa el primero disponible
+                _warehouse = self.env['stock.warehouse'].search(
+                    [('company_id', '=', self.env.company.id)], 
+                    limit=1
+                )
+            # Buscar el tipo de operación 'incoming' relacionado con el almacén
+            self.picking_type_id = self.env['stock.picking.type'].search(
+                [('warehouse_id', '=', _warehouse.id), ('code', '=', 'incoming')], 
+                limit=1
+            )
+
 
     @api.model
     def create(self, vals):

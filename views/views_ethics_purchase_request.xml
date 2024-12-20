@@ -166,7 +166,6 @@
             <xpath expr="//field[@name='priority']" position="after">
                 <!-- Aquí añades el nuevo campo o la modificación deseada. 
                         Por ejemplo, añadir un campo llamado 'sequence_alter'. -->
-                <field name="warehouse_id"/>
                 <field name="sequence_alter"/>
             </xpath>
 

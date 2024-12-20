@@ -29,6 +29,7 @@
                 - Agregando colores a los estados agregados
                 - Agregando vista kanban al modelo purchase.request
                 - Arreglando vista Form heredada que no funcionaba - purchase.request.form.inherit.ethicspr
+                - Creando cuenta analitica predetetermianda por almacen. 2024.12.20
     """,
 
     'author': "Alconsoft",
@@ -38,7 +39,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '24.12.18',
+    'version': '24.12.20:17',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',
@@ -57,7 +58,7 @@
         'views/views2.xml',
         'views/views_categories.xml',
         #'views/views_reports.xml',
-        'views/view_picking.xml',
+        'views/view_picking.xml', 
         'views/views_ethics_purchase_request.xml',
         'views/views_purchase_order.xml',
         'static/xls/project.costtype.csv',
@@ -65,6 +66,7 @@
         #'views/view_purchase_approval_kanak.xml',
         'views/news_views.xml',
         'views/res_company_view.xml',
+        'views/views_stock_warehouse.xml'
         ###############################
     ],
     # only loaded in demonstration mode
