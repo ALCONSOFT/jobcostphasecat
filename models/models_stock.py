@@ -85,8 +85,17 @@ class JC_StockMove(models.Model):
                 print('dominio: con filtro:', domain)
             return domain
 
-    account_analytic_id = fields.Many2one('account.analytic.account', readonly=False, string='Cuenta Analítica')
-
+    account_analytic_id = fields.Many2one(
+        'account.analytic.account',
+        readonly=False, string='Cuenta Analítica')
+    # Alconor: 23-dic-2024
+    vehicle_id = fields.Many2one(
+        'fleet.vehicle', 
+        string='Vehículo',
+        tracking=True,
+        help="Vehículo asignado para esta transferencia"
+    )
+    # -------------------------
     category_id = fields.Many2one(
         "project.category", string="Categoria", tracking=True)
     phase_id = fields.Many2one("project.phaseproject",
@@ -151,7 +160,18 @@ class JC_StockMoveLine(models.Model):
 
     category_id = fields.Many2one(
         "project.category", string="Categoria", tracking=True)
-    account_analytic_id = fields.Many2one('account.analytic.account', readonly=False, string='Cuenta Analítica')
+    account_analytic_id = fields.Many2one(
+        'account.analytic.account',
+        readonly=False,
+        string='Cuenta Analítica')
+    # Alconor: 23-dic-2024
+    vehicle_id = fields.Many2one(
+        'fleet.vehicle', 
+        string='Vehículo',
+        tracking=True,
+        help="Vehículo asignado para esta transferencia"
+    )
+    # -------------------------
     phase_id = fields.Many2one("project.phaseproject",
                                string="Fase",
                                tracking=True

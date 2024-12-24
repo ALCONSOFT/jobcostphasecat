@@ -41,6 +41,7 @@
                 <xpath expr="//field[@name='analytic_distribution']" position="after">
                     <field name="category_id" optional="show"/>
                     <field name="phase_id" optional="show"/>
+                    <field name="vehicle_id" optional="show"/>
                 </xpath>
             </field>
         </record>
@@ -60,6 +61,7 @@
                         name="account_analytic_id"
                         optional="hide"
                     />
+                    <field name="vehicle_id" optional="show"/>                    
                 </xpath>
             </field>
         </record>
@@ -82,6 +84,7 @@
                     <field name="category_id" optional="hide"/>
                     <field name="account_analytic_id" optinoal="show"/>
                     <field name="phase_id" optional="show"/>
+                    <field name="vehicle_id" optional="show"/>
                     
                 </xpath>
             </field>

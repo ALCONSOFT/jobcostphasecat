@@ -21,6 +21,14 @@ class JC_StockPicking(models.Model):
         string="Al Lote Completo", comodel_name="account.analytic.account", help="Se refiere a si todos los productos corresponden al mismo lote!"
     )
     actividades_id = fields.Many2one("account.analytic.line", string="Tareas", tracking=True)
+    # alconor: 23-dic-2024
+    # vehicle_id = fields.Many2one(
+    #     'fleet.vehicle', 
+    #     string='Vehículo',
+    #     tracking=True,
+    #     help="Vehículo asignado para esta transferencia"
+    # )
+    # ------------------------------
     def action_confirm_jc(self):
         # Llamar al metodo: self.action_confirm() del modelo: stock.picking
         self.env['stock.picking'].action_confirm()

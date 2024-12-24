@@ -30,6 +30,7 @@
                 - Agregando vista kanban al modelo purchase.request
                 - Arreglando vista Form heredada que no funcionaba - purchase.request.form.inherit.ethicspr
                 - Creando cuenta analitica predetetermianda por almacen. 2024.12.20
+                - Agregando vehivulo a la vista de formulario de salidas de almacen. 2024.12.23: 
     """,
 
     'author': "Alconsoft",
@@ -39,7 +40,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '24.12.20:17',
+    'version': '24.12.23:20',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',
