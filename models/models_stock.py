@@ -109,7 +109,34 @@ class JC_StockMove(models.Model):
                                # Siempre en domain el segundo parametro hace referencia al operador
                                # Siempre en domain el tercer parametro hace referencia una constante o un valor del modelo de la tabla relacionada.
                                )
-
+    # Alconor: 25-dic-2024
+    # Update field definition
+    analytic_account_line_id = fields.Many2one(
+        'account.analytic.line',
+        string='Línea Analítica',
+        required=True,  # Make field required
+        copy=False,
+        index='btree_not_null',
+        domain="[('account_id', '!=', False)]",  # Only valid analytic lines
+        help='Línea analítica asociada al movimiento de stock'
+    )
+    # Add validation constraint
+    @api.constrains('analytic_account_line_id')
+    def _check_analytic_account_line(self):
+        for record in self:
+            if not record.analytic_account_line_id:
+                raise ValidationError(_('Debe especificar una línea analítica para este movimiento.'))
+    # Add onchange for default value
+    @api.onchange('picking_id')
+    def _onchange_picking_analytic(self):
+        if self.picking_id and self.picking_id.full_analytic_account_id:
+            analytic_line = self.env['account.analytic.line'].search(
+                [('account_id', '=', self.picking_id.full_analytic_account_id.id)],
+                limit=1
+            )
+            if analytic_line:
+                self.analytic_account_line_id = analytic_line.id    
+    # -------------------------
     # ALCONOR: Valida que las fases seleccionadas sean las correspondientes a la cuenta analitica seleccioanda. 
     @api.onchange('phase_id')
     def onchange_phase_id(self):
@@ -134,6 +161,10 @@ class JC_StockMove(models.Model):
             if not self.account_analytic_id:
                 # Alconor: 22-mar-2022
                 self.account_analytic_id = self.env['stock.picking'].browse(self.picking_id.full_analytic_account_id).id
+                # Alconor: 24-dic-2024
+                # Retornar un diccionario con el ID de la cuenta analítica y el 100% de distribución
+                self.analytic_distribution = {str(self.account_analytic_id.id): 100.0}
+                # -------------------------
                 # self: hace referenca al modelo actual en el que se esta apuntando.
                 # env: hace referencia al Enviroment o Entorno; por el cual se puede localizar cualquier otro modelo
                 # modelo: clases de python que en odoo se usan para acceeder a los registros de bases de datos o funciones
@@ -143,6 +174,10 @@ class JC_StockMove(models.Model):
                 return
             else:
                 ln_aaid = self.account_analytic_id
+                # Alconor: 25-dic-2024
+                self.analytic_distribution = {str(self.account_analytic_id.id): 100.0}
+                # -------------------------
+                #self.analytic_distribution = {}
                 print('El indice de las aaid es: %', ln_aaid)
                 # Llamar a la función _bldf
                 domini = self._bldf()

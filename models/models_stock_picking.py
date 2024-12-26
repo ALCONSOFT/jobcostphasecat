@@ -28,6 +28,27 @@ class JC_StockPicking(models.Model):
     #     tracking=True,
     #     help="Vehículo asignado para esta transferencia"
     # )
+
+    picking_type_id = fields.Many2one(
+        'stock.picking.type', 'Operation Type',
+        required=True, default=lambda self: self.env.ref('stock.picking_type_out').id
+    )
+    location_id = fields.Many2one(
+        'stock.location', 'Source Location',
+        required=True, default=lambda self: self.env.ref('stock.stock_location_stock').id
+    )
+    location_dest_id = fields.Many2one(
+        'stock.location', 'Destination Location',
+        required=True, default=lambda self: self.env.ref('stock.stock_location_customers').id
+    )
+
+    @api.onchange('picking_type_id')
+    def _onchange_picking_type_id(self):
+        if self.picking_type_id:
+            self.location_id = self.picking_type_id.default_location_src_id.id
+            self.location_dest_id = self.picking_type_id.default_location_dest_id.id
+            self.full_analytic_account_id = self.picking_type_id.warehouse_id.account_analytic_id.id
+
     # ------------------------------
     def action_confirm_jc(self):
         # Llamar al metodo: self.action_confirm() del modelo: stock.picking
@@ -66,6 +87,7 @@ class JC_StockPicking(models.Model):
             record.analytic_account_id = self.full_analytic_account_id
             print('Linea: ***************')
             print(record.analytic_account_id)
+            record.analytic_distribution = {str(self.full_analytic_account_id.id): 100.0}
 
         #message = _('refrescando detalles  !!!')
         #raise UserError(message.lstrip())

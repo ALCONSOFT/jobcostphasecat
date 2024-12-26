@@ -10,3 +10,4 @@ from . import models_stock_picking
 from . import models_purchase
 from . import res_company
 from . import models_stock_warehouse
+from . import extended_analytic_line
