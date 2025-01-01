@@ -1,106 +1,5 @@
 <odoo>
-    
-    <record id="view_purchase_request_form_inherit_ethics_pr" model="ir.ui.view">
-        <field name="name">purchase.request.form.inherit.ethicspr</field>
-        <field name="model">purchase.request</field>
-        <field name="inherit_id" ref="ethics_purchase_request.view_purchase_request_form"/>
-        <field name="arch" type="xml">
-            <field name="request_responsible" position="after">
-                <field name="picking_type_id" string="Entregar a Almacén:" domain="[('code', '=', 'incoming')]"/>
-                <field name="vehicle_id" optional="hide"/>
-                <field name="account_analytic_id" optional="hide"/>
-            </field>
-            <xpath expr="//field[@name='vendor_ids']" position="after">
-                <field name="vehicle_id" optional="hide"/>
-            </xpath>
-            <!--boton: action_confirm_ethics-->
-            <!-- Reemplazamos el botón original con uno nuevo -->
-            <xpath expr="//button[@name='action_confirm']" position="replace">
-                <button name="action_confirm_ethics"
-                        string="Aprobar SdC" class="btn-primary" type="object"
-                        attrs="{'invisible': [('state', '!=', 'waiting_for_approver')]}"
-                        groups="ethics_purchase_request.group_request_approver"/>
-                <button name="reject_approver_pr"
-                        string="Rechazar SdC" type="object" class='oe_highlight'
-                        attrs="{'invisible': [('state', '!=', 'waiting_for_approver')]}"
-                        groups="jobcostphasecat.group_request_approver"/>                        
-                    
-            </xpath>
-            <!-- Insertar modificaciones después del campo priority -->
-            <xpath expr="//field[@name='priority']" position="after">
-                <!-- Aquí añades el nuevo campo o la modificación deseada. 
-                        Por ejemplo, añadir un campo llamado 'sequence_alter'. -->
-                <field name="warehouse_id"/>
-                <field name="sequence_alter"/>
-            </xpath>
-
-            <xpath expr="//field[@name='state']" position="attributes">
-                <attribute name="statusbar_visible">draft,
-                        waiting_for_verifier,
-                        waiting_for_audit,
-                        waiting_for_buyer,
-                        waiting_for_approver,
-                        confirm,
-                        cancel</attribute>
-            </xpath>
-            <!-- Usuario envia a Verificador-->
-            <xpath expr="//button[@name='action_submit_for_verifier']" position="replace">
-                <button name="action_submit_for_verifier_jc"
-                        string="Enviar a Verificar" class="btn-primary" type="object"
-                        attrs="{'invisible': [('state', '!=', 'draft')]}"
-                        groups="ethics_purchase_request.group_request_user"/>
-            </xpath>
-            <xpath expr="//button[@name='reject_verifier_pr']" position="replace">            
-                <button name="reject_verifier_pr_jc"
-                        string="Rechazar" type="object" class='oe_highlight'
-                        attrs="{'invisible': [('state', '!=', 'waiting_for_verifier')]}"
-                        groups="ethics_purchase_request.group_request_user"/>
-                <button name="reject_verifier_pr_jc"
-                        string="Enviar a Borrador" type="object" class='oe_highlight'
-                        groups="ethics_purchase_request.group_request_user"/>
-            </xpath>
-
-            <!-- Verificador envia a Auditor-->
-            <xpath expr="//button[@name='action_submit_for_approver']" position="before">
-                <button name="action_waiting_for_audit"
-                        string="Enviar a Auditoría" class="btn-primary" type="object"
-                        attrs="{'invisible': [('state', '!=', 'waiting_for_verifier')]}"
-                        groups="ethics_purchase_request.group_request_verifier"/>
-            </xpath>
-            <!-- Auditor envia al comprador -->
-            <xpath expr="//button[@name='action_submit_for_approver']" position="before">
-                <button name="action_submit_for_audit"
-                        string="Enviar a Compras" class="btn-primary" type="object"
-                        attrs="{'invisible': [('state', '!=', 'waiting_for_audit')]}"
-                        groups="jobcostphasecat.group_request_auditor"
-                        />
-                <button name="reject_audit_pr"
-                        string="Rechazar por Auditoría" class="btn-primary" type="object"
-                        attrs="{'invisible': [('state', '!=', 'waiting_for_audit')]}"
-                        groups="jobcostphasecat.group_request_auditor"/>
-            </xpath>
-            <!-- Comprador envia al gerente -->
-            <xpath expr="//button[@name='action_submit_for_approver']" position="replace">
-                <button name="action_submit_for_approver"
-                        string="Enviar a Aprobación" class="btn-primary" type="object"
-                        attrs="{'invisible': [('state', '!=', 'waiting_for_buyer')]}"
-                        groups="jobcostphasecat.group_request_buyer"/>
-            </xpath>
-            <xpath expr="//button[@name='reject_approver_pr']" position="replace">
-                <button name="reject_approver_pr"
-                        string="Rechazar SdC" type="object" class='oe_highlight'
-                        attrs="{'invisible': [('state', '!=', 'waiting_for_buyer')]}"
-                        groups="jobcostphasecat.group_request_buyer"/>                        
-            </xpath>
-            <!-- Cambiar el campo vendor_ids; para que tambien el comprador pueda agregar los vendors-->
-            <xpath expr="//field[@name='vendor_ids']" position="replace">
-                <field name="vendor_ids"
-                        widget="many2many_tags"
-                        attrs="{'column_invisible': [('parent.state', 'not in', ['waiting_for_approver','confirm','waiting_for_buyer'])]}"/>
-                
-            </xpath>
-        </field>
-    </record>
+    <!---->    
     
     <!-- Si también necesitas heredar la vista tree -->
     <record id="view_purchase_request_tree_inherit_jobcostphasecat" model="ir.ui.view">
@@ -149,7 +48,10 @@
             <xpath expr="//field[@name='vendor_ids']" position="after">
                 <field name="vehicle_id" optional="hide"/>
             </xpath>
-            <!--boton: action_confirm_ethics-->
+            <!-- Botón para generar el reporte QWeb -->
+            <xpath expr="//header" position="inside">
+                <button name="%(action_report_purchase_request)d" string="Imprimir Solicitud de Compra" type="action" class="btn-primary"/>
+            </xpath>
             <!-- Reemplazamos el botón original con uno nuevo -->
             <xpath expr="//button[@name='action_confirm']" position="replace">
                 <button name="action_confirm_ethics"
@@ -160,7 +62,6 @@
                         string="Rechazar SdC" type="object" class='oe_highlight'
                         attrs="{'invisible': [('state', '!=', 'waiting_for_approver')]}"
                         groups="jobcostphasecat.group_request_approver"/>                        
-                    
             </xpath>
             <!-- Insertar modificaciones después del campo priority -->
             <xpath expr="//field[@name='priority']" position="after">
@@ -228,12 +129,16 @@
                         groups="jobcostphasecat.group_request_buyer"/>                        
             </xpath>
             <!-- Cambiar el campo vendor_ids; para que tambien el comprador pueda agregar los vendors-->
+            <!-- Cambiar el campo vendor_ids; para que tambien el comprador pueda agregar los vendors-->
             <xpath expr="//field[@name='vendor_ids']" position="replace">
                 <field name="vendor_ids"
-                        widget="many2many_tags"
-                        attrs="{'column_invisible': [('parent.state', 'not in', ['waiting_for_approver','confirm','waiting_for_buyer'])]}"/>
-                
+                    widget="many2many_tags"
+                    create="0"
+                    can_create="false"
+                    options="{'no_create': True, 'no_create_edit': True}"
+                    attrs="{'column_invisible': [('parent.state', 'not in', ['waiting_for_approver','confirm','waiting_for_buyer'])]}"/>
             </xpath>
+
         </field>
     </record>
 

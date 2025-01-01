@@ -52,14 +52,23 @@
                     <field name="account_analytic_id"/>
                     <field name="vehicle_id"/>
                 </xpath>
-                <xpath expr="//field[@name='price_tax']" position="after">
-                    <field name="vehicle_id" optional="show"/>
-                    <field name="account_analytic_id" optional="show"/>
-                </xpath>
                 <!-- Agregar campo computado para subtotal-->
                 <field name="tax_totals" position="before">
                         <field name="total_price_subtotal" readonly="1"/>
                 </field>
+                <xpath expr="//field[@name='order_line']/tree" position="inside">
+                    <field name="product_qty"
+                        options="{'no_create': True}"
+                        widget="float"
+                        attrs="{'readonly': [('state', '!=', 'draft')]}" />
+                </xpath>
+                <xpath expr="//field[@name='price_tax']" position="after">
+                    <field name="vehicle_id" optional="show"/>
+                    <field name="account_analytic_id" optional="show"/>
+                    <field name="notes" optional="show" />
+                    <field name="allow_qty_change_line" optional="hide" />
+                </xpath>
+
             </field>
         </record>
         <!-- Heredar la vista form de purchase.order.form -->

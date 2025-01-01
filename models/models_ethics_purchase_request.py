@@ -264,7 +264,8 @@ class EthicsPurchaseRequest(models.Model):
         if warehouse.code:
             # Si el almacén tiene código
             cadena_sql = """SELECT MAX(sequence_alter) FROM public.purchase_request
-                            WHERE substring(sequence_alter from 1 for %(len)s) = %(code)s;"""
+                            WHERE LENGTH(substring(sequence_alter from 1 for %(len)s)) = 2
+                            AND substring(sequence_alter from 1 for %(len)s) = %(code)s;"""
             cr.execute(cadena_sql, {'len': len(warehouse.code), 'code': warehouse.code})
             result = cr.fetchone()
             import re

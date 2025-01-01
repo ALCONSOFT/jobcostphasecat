@@ -30,7 +30,10 @@
                 - Agregando vista kanban al modelo purchase.request
                 - Arreglando vista Form heredada que no funcionaba - purchase.request.form.inherit.ethicspr
                 - Creando cuenta analitica predetetermianda por almacen. 2024.12.20
-                - Agregando vehivulo a la vista de formulario de salidas de almacen. 2024.12.23: 
+                - Agregando vehiculo a la vista de formulario de salidas de almacen. 2024.12.23: 
+                - Agregando funcionalidad que impide crear partners en la vista SdC. 2024.12.27:
+                - Corrigiendo consulta sql que filtra las secuencias de mas de 2 digitos en SdC. 2024.12.31:
+                - Agregando Reporte de SdC. 2024.12.31:
     """,
 
     'author': "Alconsoft",
@@ -40,7 +43,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '24.12.25:18',
+    'version': '25.01.01:11',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',
@@ -56,6 +59,7 @@
         'security/security_view.xml',
         'security/ir.model.access.csv',
         ###############################
+        'views/res_config_settings_views.xml',
         'views/views2.xml',
         'views/views_categories.xml',
         #'views/views_reports.xml',
@@ -67,8 +71,11 @@
         #'views/view_purchase_approval_kanak.xml',
         'views/news_views.xml',
         'views/res_company_view.xml',
-        'views/views_stock_warehouse.xml'
+        'views/views_stock_warehouse.xml',
         ###############################
+        'report/purchase_request_report_template.xml',
+        'report/purchase_request_report_action.xml',
+        
     ],
     # only loaded in demonstration mode
     'demo': [
