@@ -4,7 +4,18 @@
             <main>
                 <div class="page">
                     <div>
-                        <h1>Purchase Request: <span t-esc="docs.name"/></h1>
+                        <table class="table table-sm" style="width: 100%; text-align: right;">
+                            <tr>
+                                <td style="text-align: left;">
+                                    <h1>Purchase Request: <span t-esc="docs.name"/></h1>
+                                </td>
+                                <td>
+                                    <p>F-COM-01</p>
+                                    <p>Versión 03</p>
+                                    <p>02/01/2025</p>
+                                </td>
+                            </tr>
+                        </table>
                     </div>
                     <div>
                         <table class="table table-sm">
@@ -40,7 +51,7 @@
                     </div>
                     <div>
                         <h2>Request Lines</h2>
-                        <table class="table table-bordered">
+                        <table class="table table-bordered" style="font-size: smaller;" >
                             <thead>
                                 <tr>
                                     <th>Product</th>
@@ -70,7 +81,7 @@
                         </table>
                     </div>
                     <div>
-                        <h2>Reason for Request</h2>
+                        <h3>Reason for Request</h3>
                         <p t-esc="docs.description"/>
                     </div>
                 </div>
