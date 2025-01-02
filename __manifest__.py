@@ -43,7 +43,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '25.01.01:11',
+    'version': '25.01.01:18',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',
@@ -63,7 +63,11 @@
         'views/views2.xml',
         'views/views_categories.xml',
         #'views/views_reports.xml',
-        'views/view_picking.xml', 
+        'views/view_picking.xml',
+        ###############################
+        'report/purchase_request_report_template.xml',
+        'report/purchase_request_report_action.xml',
+        ###############################
         'views/views_ethics_purchase_request.xml',
         'views/views_purchase_order.xml',
         'static/xls/project.costtype.csv',
@@ -72,10 +76,6 @@
         'views/news_views.xml',
         'views/res_company_view.xml',
         'views/views_stock_warehouse.xml',
-        ###############################
-        'report/purchase_request_report_template.xml',
-        'report/purchase_request_report_action.xml',
-        
     ],
     # only loaded in demonstration mode
     'demo': [

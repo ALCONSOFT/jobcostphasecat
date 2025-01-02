@@ -50,7 +50,7 @@
             </xpath>
             <!-- Botón para generar el reporte QWeb -->
             <xpath expr="//header" position="inside">
-                <button name="%(action_report_purchase_request)d" string="Imprimir Solicitud de Compra" type="action" class="btn-primary"/>
+                <button name="%(jobcostphasecat.action_report_purchase_request)d" string="Imprimir Solicitud de Compra" type="action" class="btn-primary"/>
             </xpath>
             <!-- Reemplazamos el botón original con uno nuevo -->
             <xpath expr="//button[@name='action_confirm']" position="replace">
