@@ -57,18 +57,47 @@
                         <field name="total_price_subtotal" readonly="1"/>
                 </field>
                 <xpath expr="//field[@name='order_line']/tree" position="inside">
-                    <field name="product_qty"
+                    <field name="product_qty" string="Qty" class="text-right"
                         options="{'no_create': True}"
                         widget="float"
-                        attrs="{'readonly': [('state', '!=', 'draft')]}" />
+                        attrs="{'readonly': [('state', '!=', 'draft')]}"
+                        decoration-danger="hide == True" />
                 </xpath>
                 <xpath expr="//field[@name='price_tax']" position="after">
-                    <field name="vehicle_id" optional="show"/>
-                    <field name="account_analytic_id" optional="show"/>
-                    <field name="notes" optional="show" />
+                    <field name="vehicle_id" optional="show" decoration-danger="hide == True"/>
+                    <field name="account_analytic_id" optional="show" decoration-danger="hide == True"/>
+                    <field name="notes" optional="show" decoration-danger="hide == True"/>
                     <field name="allow_qty_change_line" optional="hide" />
+                    <field name="hide" optional="show" class="text-primary" decoration-danger="hide == True"/>
                 </xpath>
-
+                <xpath expr="//field[@name='product_id']" position="attributes">
+                    <attribute name="decoration-danger">hide == True</attribute>
+                </xpath>
+                <xpath expr="//field[@name='price_unit']" position="attributes">
+                    <attribute name="decoration-danger">hide == True</attribute>
+                </xpath>
+                <xpath expr="//field[@name='taxes_id']" position="attributes">
+                    <attribute name="decoration-danger">hide == True</attribute>
+                </xpath>
+                <xpath expr="//field[@name='price_subtotal']" position="attributes">
+                    <attribute name="decoration-danger">hide == True</attribute>
+                </xpath>
+                <xpath expr="//field[@name='product_uom']" position="attributes">
+                    <attribute name="decoration-danger">hide == True</attribute>
+                </xpath>
+            </field>
+        </record>
+        <!-- Heredar la vista form de purchase_discount.purchase.order.form -->
+        <record id="purchase_order_form_discounted_price" model="ir.ui.view">
+            <field name="name">purchase.order.form.discounted.price</field>
+            <field name="model">purchase.order</field>
+            <field name="inherit_id" ref="purchase_discount.purchase_order_form"/>
+            <field name="arch" type="xml">
+                <!-- Insertar campo después del campo 'price_unit' -->
+                <xpath expr="//field[@name='price_unit']" position="after">
+                    <field name="price_unit_discounted" string="P.U.Desc."
+                        decoration-danger="hide == True" readonly="1"/>
+                </xpath>
             </field>
         </record>
         <!-- Heredar la vista form de purchase.order.form -->

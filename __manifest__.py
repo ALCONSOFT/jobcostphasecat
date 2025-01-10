@@ -34,6 +34,8 @@
                 - Agregando funcionalidad que impide crear partners en la vista SdC. 2024.12.27:
                 - Corrigiendo consulta sql que filtra las secuencias de mas de 2 digitos en SdC. 2024.12.31:
                 - Agregando Reporte de SdC. 2024.12.31:
+                - Agregando Funcionalidad que oculta la linea de la SdP que no se compra. 2025.01.07:
+                - Agregando funcionalidad que permite ver precios unitarios con descuentos en la SdP. 2025.01.08:
     """,
 
     'author': "Alconsoft",
@@ -43,13 +45,15 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '25.01.01:18',
+    'version': '25.01.08:18',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',
                 'stock_analytic',
                 'ethics_purchase_request',
                 'purchase',
+                'purchase_discount',
+                'purchase_order_supplierinfo_update'    # Modulo que actualiza la información del precio del proveedor en la orden de compra
                 ],
 
     # always loaded: Aqui se cargan los formularios de vista.
@@ -76,6 +80,8 @@
         'views/news_views.xml',
         'views/res_company_view.xml',
         'views/views_stock_warehouse.xml',
+        #'report/purchase_order_report_iso.xml',
+        'report/purchase_order_report.xml',
     ],
     # only loaded in demonstration mode
     'demo': [
