@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
+import logging
+from odoo import tools
 from datetime import timedelta
 import time
 from odoo.exceptions import ValidationError
 import pytz
 import datetime
 from zoneinfo import ZoneInfo
-
+contexto_purchase_request = []
+_logger = logging.getLogger(__name__)
 contexto_purchase_request = []
 
 class EthicsPurchaseRequest(models.Model):
@@ -19,10 +22,21 @@ class EthicsPurchaseRequest(models.Model):
                 body=_('SdC: ' + self.name + ' enviada a Auditoría.')
             )
 
-    vehicle_id = fields.Many2one('fleet.vehicle', string='Vehículo', index='btree_not_null', tracking=True)
+    vehicle_id = fields.Many2one('fleet.vehicle.data', string='Vehículo', tracking=True)
+    # index='btree_not_null', 
+    def action_open_vehicle_selection(self):
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Select Vehicle',
+            'res_model': 'fleet.vehicle.data',
+            'view_mode': 'tree',
+            'target': 'new',
+        }
+
     warehouse_id = fields.Many2one('stock.warehouse', string='Almacén',
         domain="[('company_id', '=', company_id)]", required=True, readonly=False)    
     sequence_alter = fields.Char(string='Secuencia Alterna', readonly=True, index=True, rerquired=True)
+    payment_term_id = fields.Many2one('account.payment.term', string='Payment Terms', tracking=True)
     #def _default_picking_type_id(self):
         #return self.env['stock.picking.type'].search([('warehouse_id.company_id', '=', self.env.company.id), ('code', '=', 'incoming')], limit=1)
     def _default_picking_type_id(self):
@@ -164,7 +178,8 @@ class EthicsPurchaseRequest(models.Model):
                             'account_analytic_id': line.account_analytic_id.id,
                             'product_qty': line.product_qty,
                             'product_uom': line.product_uom.id,
-                            'vehicle_id': line.vehicle_id,})
+                            'vehicle_id': line.vehicle_id,
+                            })
                             for line in self.pr_lines.filtered(lambda l: not l.vendor_ids and l.product_qty >= 1)]
 
                 return {'name': _('Create Back Purchase Request'),
@@ -183,6 +198,7 @@ class EthicsPurchaseRequest(models.Model):
                             'default_company_id': self.company_id.id,
                             'default_source_document': self.name,
                             'default_vehicle_id': self.vehicle_id,
+                            'default_payment_term_id': self.payment_term_id,
                             'default_warehouse_id': self.warehouse_id,
                             'default_back_purchase_request_ids': wiz_lines,
                             }
@@ -214,6 +230,7 @@ class EthicsPurchaseRequest(models.Model):
                 'partner_id': vendor.id,
                 'pr_ref_id': self.id,
                 'vehicle_id': self.vehicle_id.id,
+                'payment_term_id': self.payment_term_id.id,
                 'account_analytic_id': self.account_analytic_id.id,
                 'picking_type_id': self.picking_type_id.id,
                 'order_line': lines,
@@ -264,7 +281,7 @@ class EthicsPurchaseRequest(models.Model):
         if warehouse.code:
             # Si el almacén tiene código
             cadena_sql = """SELECT MAX(sequence_alter) FROM public.purchase_request
-                            WHERE LENGTH(substring(sequence_alter from 1 for %(len)s)) = 2
+                            WHERE LENGTH(substring(sequence_alter from 1 for %(len)s)) = 1
                             AND substring(sequence_alter from 1 for %(len)s) = %(code)s;"""
             cr.execute(cadena_sql, {'len': len(warehouse.code), 'code': warehouse.code})
             result = cr.fetchone()
@@ -311,10 +328,12 @@ class EthicsPurchaseRequest(models.Model):
 class EthicsPuchasRequestLine(models.Model):
     _inherit = 'purchase.request.line'
 
-    vehicle_id = fields.Many2one('fleet.vehicle',
+    vehicle_id = fields.Many2one('fleet.vehicle.data',
                                 string='Vehículo',
                                 index='btree_not_null',
-                                 default=lambda self: self._default_vehicle_id(), tracking=True)
+                                domain=[],
+                                default=lambda self: self._default_vehicle_id(), tracking=True)
+
     account_analytic_id = fields.Many2one('account.analytic.account',
                                             readonly=False,
                                             string='Cuenta Analítica',
@@ -366,12 +385,14 @@ class PurchaseOrders(models.Model):
     _inherit = 'purchase.order'
 
     vehicle_id = fields.Many2one('fleet.vehicle', string='Vehicle', index='btree_not_null')
+    payment_term_id = fields.Many2one('account.payment.term', string='Payment Terms', tracking=True)
     account_analytic_id = fields.Many2one('account.analytic.account', readonly=False, string='Cuenta Analítica')
     # Extendiendo el campo 'state' para agregar el nuevos estados
     state = fields.Selection(selection_add=[('waiting_for_price_revision', 'Esperando Revisión Precios'),
                                             ('waiting_for_price_approval','Esperando Aprobación Precios'),
                                             ('waiting_for_approval','Esperando Aprobación'),
-                                            ('to approve','Por Aprobar @ Compras')
+                                            ('to approve','Por Aprobar @ Compras'),
+                                            ('descarted','Descartado'),
         ], ondelete={'waiting_for_approval': 'cascade'})
 
     # Boton Enviar P.O. por email
@@ -384,6 +405,9 @@ class PurchaseOrders(models.Model):
     def action_waiting_for_price_revision(self):
         for rec in self:
             rec.state = 'waiting_for_price_revision'
+    def action_waiting_for_price_revision_back(self):
+        for rec in self:
+            rec.state = 'draft'
     
     def reject_waiting_for_price_revision(self):
         for rec in self:
@@ -439,3 +463,26 @@ class PurchaseOrderLine(models.Model):
 
     vehicle_id = fields.Many2one('fleet.vehicle', string='Vehicle', index='btree_not_null')
     account_analytic_id = fields.Many2one('account.analytic.account', readonly=False, string='Cuenta Analítica')
+
+class FleetVehicleData(models.Model):
+    _name = 'fleet.vehicle.data'
+    _description = 'Fleet Vehicle Data'
+    _auto = False
+
+    id = fields.Integer(string='Linea', readonly=True)
+    vehicle_id = fields.Integer(string='Vehicle ID', readonly=True)
+    name = fields.Char(string='Vehicle Name', readonly=True)
+    license_plate = fields.Char(string='License Plate', readonly=True)
+
+    @api.model
+    def init(self):
+        tools.drop_view_if_exists(self.env.cr, self._table)
+        query = """
+            CREATE OR REPLACE VIEW fleet_vehicle_data AS
+            SELECT id AS id, id AS vehicle_id, name, license_plate
+            FROM fleet_vehicle
+        """
+        try:
+            self.env.cr.execute(query)
+        except Exception as e:
+            _logger.error('Error creating view fleet_vehicle_data: %s', e)

@@ -11,6 +11,7 @@
                 <!-- Añade aquí campos adicionales si es necesario, ejemplo: -->
                 <field name="vehicle_id" optional="hide"/>
                 <field name="account_analytic_id" optional="hide"/>
+
             </xpath>
             <xpath expr="//field[@name='priority']" position="after">
                 <field name="sequence_alter"/>
@@ -46,11 +47,12 @@
                 <field name="account_analytic_id" optional="hide"/>
             </field>
             <xpath expr="//field[@name='vendor_ids']" position="after">
-                <field name="vehicle_id" optional="hide"/>
+                <field name="vehicle_id" domain="[]" optional="hide"/>
             </xpath>
             <!-- Botón para generar el reporte QWeb -->
             <xpath expr="//header" position="inside">
                 <button name="%(jobcostphasecat.action_report_purchase_request)d" string="Imprimir Solicitud de Compra" type="action" class="btn-primary"/>
+                <button name="action_open_vehicle_selection" string="Listar Vehículos" type="object" class="btn-secondary"/>                
             </xpath>
             <!-- Reemplazamos el botón original con uno nuevo -->
             <xpath expr="//button[@name='action_confirm']" position="replace">
@@ -68,6 +70,7 @@
                 <!-- Aquí añades el nuevo campo o la modificación deseada. 
                         Por ejemplo, añadir un campo llamado 'sequence_alter'. -->
                 <field name="sequence_alter"/>
+                <field name="payment_term_id" optional="hide"/>
             </xpath>
 
             <xpath expr="//field[@name='state']" position="attributes">
@@ -139,6 +142,18 @@
                     attrs="{'column_invisible': [('parent.state', 'not in', ['waiting_for_approver','confirm','waiting_for_buyer'])]}"/>
             </xpath>
 
+        </field>
+    </record>
+
+    <record id="view_fleet_vehicle_data_list" model="ir.ui.view">
+        <field name="name">fleet.vehicle.data.list</field>
+        <field name="model">fleet.vehicle.data</field>
+        <field name="arch" type="xml">
+            <tree string="Fleet Vehicle Data">
+                <field name="vehicle_id"/>
+                <field name="name"/>
+                <field name="license_plate"/>
+            </tree>
         </field>
     </record>
 
