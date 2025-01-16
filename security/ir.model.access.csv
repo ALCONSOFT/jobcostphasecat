@@ -22,3 +22,4 @@ access_purchase_request_auditor,jobcostphasecat.access_purchase_request_auditor,
 access_purchase_request_buyer,jobcostphasecat.access_purchase_request_buyer,model_purchase_request,group_request_buyer,1,1,1,1
 access_pr_reject_reason,jobcostphasecat.access_pr_reject_reason,ethics_purchase_request.model_pr_reject_reason,group_request_auditor,1,1,1,1
 access_add_pr_reason,jobcostphasecat.access_add_pr_reason,ethics_purchase_request.model_add_pr_reason,group_request_auditor,1,1,1,1
+access_fleet_vehicle_data,access.fleet.vehicle.data,model_fleet_vehicle_data,,1,1,1,1

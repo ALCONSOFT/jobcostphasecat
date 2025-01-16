@@ -11,6 +11,7 @@
                     <field name="vehicle_id" optional="show"/>
                     <field name="account_analytic_id" optional="show"/>
                     <field name="pr_ref_id" optional="show"/>
+                    <field name="payment_term_id" optional="show"/>
                 </xpath>
                 <!-- Agregando colores a los estados agregados
                                         <field name="state" optional="show" widget="badge" decoration-success="state == 'purchase' or state == 'done'" decoration-warning="state == 'to approve'" decoration-info="state == 'draft' or state == 'sent'"/>-->
@@ -38,6 +39,7 @@
                 <xpath expr="//field[@name='invoice_status']" position="after">
                     <field name="vehicle_id" optional="show"/>
                     <field name="account_analytic_id" optional="show"/>
+                    <field name="payment_term_id" optional="show"/>
                 </xpath>
             </field>
         </record>
@@ -51,6 +53,7 @@
                 <xpath expr="//field[@name='effective_date']" position="after">
                     <field name="account_analytic_id"/>
                     <field name="vehicle_id"/>
+                    <field name="payment_term_id"/>
                 </xpath>
                 <!-- Agregar campo computado para subtotal-->
                 <field name="tax_totals" position="before">

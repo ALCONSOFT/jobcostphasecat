@@ -36,6 +36,8 @@
                 - Agregando Reporte de SdC. 2024.12.31:
                 - Agregando Funcionalidad que oculta la linea de la SdP que no se compra. 2025.01.07:
                 - Agregando funcionalidad que permite ver precios unitarios con descuentos en la SdP. 2025.01.08:
+                - Agregando opcion de seleccionar vehiculo en la SdP-Solucion al tema de privilegio por flota. 2025.01.13:
+                - Agregando funcionalidad de teminos de condiciones de pago: 2025.01.13:
     """,
 
     'author': "Alconsoft",
@@ -45,7 +47,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '25.01.08:18',
+    'version': '25.01.14:00',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',
