@@ -38,6 +38,10 @@
                 - Agregando funcionalidad que permite ver precios unitarios con descuentos en la SdP. 2025.01.08:
                 - Agregando opcion de seleccionar vehiculo en la SdP-Solucion al tema de privilegio por flota. 2025.01.13:
                 - Agregando funcionalidad de teminos de condiciones de pago: 2025.01.13:
+                - Corrigiendo fallo al actualizar Cuanta Analitica y Analitico en la SdP. 2025.01.23:
+                - Corrigiendo fallo al crear Picking en la SdP->O.C. 2025.01.24:
+                - Corrigiendo funcionalidad de descuento general en la O.C.  solo se permite cambiar a desc gene es estados 
+                    borrador, enviado y esperando por revisioin de precio. 2025.01.24: 
     """,
 
     'author': "Alconsoft",
@@ -47,7 +51,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '25.01.14:00',
+    'version': '25.01.24:07',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',
@@ -55,7 +59,8 @@
                 'ethics_purchase_request',
                 'purchase',
                 'purchase_discount',
-                'purchase_order_supplierinfo_update'    # Modulo que actualiza la información del precio del proveedor en la orden de compra
+                'purchase_order_supplierinfo_update',    # Modulo que actualiza la información del precio del proveedor en la orden de compra
+                'purchase_order_general_discount',       # Modulo que agrega descuento general a la orden de compra
                 ],
 
     # always loaded: Aqui se cargan los formularios de vista.

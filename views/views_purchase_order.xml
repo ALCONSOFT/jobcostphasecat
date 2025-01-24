@@ -103,6 +103,22 @@
                 </xpath>
             </field>
         </record>
+        <!-- Copyright 2025 - jobcostphasecat
+        Heredar la vista form de purchase.order.form del módulo purchase_order_general_discount
+        License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl). -->
+        <record id="purchase_order_form_inherit_jobcostphasecat" model="ir.ui.view">
+            <field name="model">purchase.order</field>
+            <field name="inherit_id" ref="purchase_order_general_discount.purchase_order_form" />
+            <field name="arch" type="xml">
+            <!-- Protegemos el botón y el campo general_discount -->
+            <xpath expr="//button[@name='action_update_general_discount']" position="attributes">
+                <attribute name="attrs">{'invisible': [('state', 'not in', ['draft', 'send', 'waiting_for_price_revision'])]}</attribute>
+            </xpath>
+            <xpath expr="//field[@name='general_discount']" position="attributes">
+                <attribute name="attrs">{'readonly': [('state', 'not in', ['draft', 'send', 'waiting_for_price_revision'])]}</attribute>
+            </xpath>
+            </field>
+        </record>
         <!-- Heredar la vista form de purchase.order.form -->
         <record id="purchase_order_form_approval_rules_jc" model="ir.ui.view">
             <field name="name">purchase.order.form.approval.rules.jc</field>

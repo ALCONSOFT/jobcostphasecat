@@ -224,6 +224,7 @@ class EthicsPurchaseRequest(models.Model):
                                                          'display_type': False, 
                                                          'vehicle_id': line.vehicle_id.id,
                                                          'account_analytic_id': line.account_analytic_id.id,
+                                                         'analytic_distribution': {str(line.account_analytic_id.id): 100.0},
                                                          'date_planned': time.strftime('%Y-%m-%d')}))
         for vendor,lines in purchase_dict.items():
             purchase_id = self.env['purchase.order'].create({
@@ -341,7 +342,7 @@ class EthicsPuchasRequestLine(models.Model):
     product_qty = fields.Float('Quantity', default=1, tracking=True)
     product_uom = fields.Many2one('uom.uom', related='product_id.uom_po_id', tracking=True,
         help="This comes from the product form.")
-    vendor_ids = fields.Many2many('res.partner', tracking=True)    
+    vendor_ids = fields.Many2many('res.partner', tracking=True)
 
     def _default_vehicle_id(self):
         user_id = self.env.user.id

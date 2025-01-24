@@ -1,4 +1,6 @@
-from odoo import models, fields, api
+from odoo import models, fields, api, SUPERUSER_ID, _
+from odoo.tools import float_is_zero
+from itertools import groupby
 
 class PurchaseOrder(models.Model):
     _inherit = 'purchase.order'
@@ -67,6 +69,115 @@ class PurchaseOrder(models.Model):
             )
         print("Tax Totals:", order.tax_totals)
 
+    # Accion de crear factura desde purchase en jobcostphasecat: Se agrega la condición para que no se cree la factura si la línea está oculta
+    # 2025.01.23
+    def action_create_invoice(self):
+        """Create the invoice associated to the PO.
+        """
+        precision = self.env['decimal.precision'].precision_get('Product Unit of Measure')
+
+        # 1) Prepare invoice vals and clean-up the section lines
+        invoice_vals_list = []
+        sequence = 10
+        for order in self:
+            if order.invoice_status != 'to invoice':
+                continue
+
+            order = order.with_company(order.company_id)
+            pending_section = None
+            # Invoice values.
+            invoice_vals = order._prepare_invoice()
+            # Invoice line values (keep only necessary sections).
+            for line in order.order_line:
+                if line.display_type == 'line_section':
+                    pending_section = line
+                    continue
+                #Alconor: Se agrega la condición para que no se cree la factura si la línea está oculta
+                if line.hide:
+                    continue
+                # 2025.01.23
+                if not float_is_zero(line.qty_to_invoice, precision_digits=precision):
+                    if pending_section:
+                        line_vals = pending_section._prepare_account_move_line()
+                        line_vals.update({'sequence': sequence})
+                        invoice_vals['invoice_line_ids'].append((0, 0, line_vals))
+                        sequence += 1
+                        pending_section = None
+                    line_vals = line._prepare_account_move_line()
+                    line_vals.update({'sequence': sequence})
+                    invoice_vals['invoice_line_ids'].append((0, 0, line_vals))
+                    sequence += 1
+            invoice_vals_list.append(invoice_vals)
+
+        if not invoice_vals_list:
+            raise UserError(_('There is no invoiceable line. If a product has a control policy based on received quantity, please make sure that a quantity has been received.'))
+
+        # 2) group by (company_id, partner_id, currency_id) for batch creation
+        new_invoice_vals_list = []
+        for grouping_keys, invoices in groupby(invoice_vals_list, key=lambda x: (x.get('company_id'), x.get('partner_id'), x.get('currency_id'))):
+            origins = set()
+            payment_refs = set()
+            refs = set()
+            ref_invoice_vals = None
+            for invoice_vals in invoices:
+                if not ref_invoice_vals:
+                    ref_invoice_vals = invoice_vals
+                else:
+                    ref_invoice_vals['invoice_line_ids'] += invoice_vals['invoice_line_ids']
+                origins.add(invoice_vals['invoice_origin'])
+                payment_refs.add(invoice_vals['payment_reference'])
+                refs.add(invoice_vals['ref'])
+            ref_invoice_vals.update({
+                'ref': ', '.join(refs)[:2000],
+                'invoice_origin': ', '.join(origins),
+                'payment_reference': len(payment_refs) == 1 and payment_refs.pop() or False,
+            })
+            new_invoice_vals_list.append(ref_invoice_vals)
+        invoice_vals_list = new_invoice_vals_list
+
+        # 3) Create invoices.
+        moves = self.env['account.move']
+        AccountMove = self.env['account.move'].with_context(default_move_type='in_invoice')
+        for vals in invoice_vals_list:
+            moves |= AccountMove.with_company(vals['company_id']).create(vals)
+
+        # 4) Some moves might actually be refunds: convert them if the total amount is negative
+        # We do this after the moves have been created since we need taxes, etc. to know if the total
+        # is actually negative or not
+        moves.filtered(lambda m: m.currency_id.round(m.amount_total) < 0).action_switch_invoice_into_refund_credit_note()
+
+        return self.action_view_invoice(moves)
+    #######################################################################################################################
+    # Accion de crear picking desde purchase en jobcostphasecat: Se agrega la condición para que no se cree el picking si la línea está oculta
+    # 2025.01.23
+    def _create_picking(self):
+        StockPicking = self.env['stock.picking']
+        for order in self.filtered(lambda po: po.state in ('purchase', 'done')):
+            if any(product.type in ['product', 'consu'] for product in order.order_line.product_id):
+                order = order.with_company(order.company_id)
+                pickings = order.picking_ids.filtered(lambda x: x.state not in ('done', 'cancel'))
+                if not pickings:
+                    res = order._prepare_picking()
+                    picking = StockPicking.with_user(SUPERUSER_ID).create(res)
+                    pickings = picking
+                else:
+                    picking = pickings[0]
+                moves = order.order_line.filtered(lambda line: not line.hide)._create_stock_moves(picking)
+                moves = moves.filtered(lambda x: x.state not in ('done', 'cancel'))._action_confirm()
+                seq = 0
+                for move in sorted(moves, key=lambda move: move.date):
+                    seq += 5
+                    move.sequence = seq
+                moves._action_assign()
+                # Get following pickings (created by push rules) to confirm them as well.
+                forward_pickings = self.env['stock.picking']._get_impacted_pickings(moves)
+                (pickings | forward_pickings).action_confirm()
+                picking.message_post_with_view('mail.message_origin_link',
+                    values={'self': picking, 'origin': order},
+                    subtype_id=self.env.ref('mail.mt_note').id)
+        return True
+    #######################################################################################################################
+
 
 class PurchaseOrderLine(models.Model):
     _inherit = 'purchase.order.line'
@@ -111,3 +222,8 @@ class PurchaseOrderLine(models.Model):
     def _onchange_hide(self):
         if self.order_id:
             self.order_id._amount_all()
+
+    @api.onchange('account_analytic_id')
+    def _onchange_account_analytic_id(self):
+        if self.analytic_distribution:
+            self.analytic_distribution = {str(self.account_analytic_id.id): 100.0}
