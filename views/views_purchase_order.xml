@@ -72,6 +72,7 @@
                     <field name="notes" optional="show" decoration-danger="hide == True"/>
                     <field name="allow_qty_change_line" optional="hide" />
                     <field name="hide" optional="show" class="text-primary" decoration-danger="hide == True"/>
+                    <field name="phase_id" optional="show"/>
                 </xpath>
                 <xpath expr="//field[@name='product_id']" position="attributes">
                     <attribute name="decoration-danger">hide == True</attribute>
@@ -125,16 +126,6 @@
             <field name="model">purchase.order</field>
             <field name="inherit_id" ref="purchase.purchase_order_form"/>
             <field name="arch" type="xml">
-                <!-- Cambiar atributos del boton Refresh & Apporval
-                <xpath expr="//button[@name='action_refresh_order']" position="attributes">
-                    <attribute name='attrs'>{'invisible': ['|', ('state','!=','waiting_for_price_revision'),
-                                             ('state','!=','draft'),
-                                             ('state','!=','sent'),
-                                             ('purchase_order_approval_rule_ids', '!=', [])]}
-                    </attribute>
-                    <attribute name='string'>Refrescar Reglas de Aprobación</attribute>
-                </xpath>
-                -->
                 <!-- Cambiar los atributos del boton: action_rfq_send
                     <attribute name='attrs'>{'invisible': ['|', ('state','!=','draft'), ('purchase_order_approval_rule_ids', '!=', [])]} -->
                 <xpath expr="//button[@name='action_rfq_send']" position="replace">
@@ -144,28 +135,24 @@
                         type="object" context="{'send_rfq':True}"
                         class="oe_highlight" data-hotkey="g"
                         groups="jobcostphasecat.group_rfq_user"/>
-                    <button name="action_rfq_send"
-                        states="done"                        
-                        string="7.Enviar P.O. e-mail"
+                    <button name="action_rfq_send_jc"
+                        states="purchase"
+                        string="7.Bloquear - Enviado P.O. e-mail"
                         type="object" context="{'send_rfq':False}"
                         class="btn-primary oe_highlight" data-hotkey="g"
-                        goups="jobcostphasecat.group_rfq_sender_po"
-                    />
+                        groups="jobcostphasecat.group_rfq_sender_po"/>
+                    <button name="action_back"
+                        string="Regresar"
+                        type="object"
+                        class="btn-secondary"
+                        groups="jobcostphasecat.group_rfq_user"
+                        attrs="{'invisible': [('state', 'in', ['done','purchase','draft'])]}"/>
+                </xpath>
 
-                </xpath>
-                <!-- Cambiar los atributos del boton: button_confirm-->
+                <!-- Eliminar el botón de confirmación -->
                 <xpath expr="//button[@name='button_confirm']" position="attributes">
-                    <attribute name='attrs'>{'invisible': [('state','!=','waiting_for_approval')]}
-                    </attribute>
-                    <attribute name="string">Confirmar Pedido</attribute>
+                    <attribute name="attrs">{'invisible': [('state', '!=', 'done-plus')]}</attribute>
                 </xpath>
-                <!-- Cambiar atributos del boton: reject_purchase (rechazo en Aprobación)
-                <xpath expr="//button[@name='reject_purchase']" position="attributes">
-                    <attribute name='attrs'>{'invisible': ['|', ('state','!=','waiting_for_approval'), ('purchase_order_approval_rule_ids', '!=', [])]}
-                    </attribute>
-                    <attribute name="string">Rechazar Pedido</attribute>
-                </xpath>
-                -->
                 <!-- Insertar boton: Envio para Revisión de Precio-->
                 <xpath expr="//button[@name='button_confirm']" position="before">
                     <button name="action_waiting_for_price_revision"
@@ -173,6 +160,13 @@
                         class="btn-primary oe_highlight"
                         groups="jobcostphasecat.group_rfq_updater"
                         attrs="{'invisible': [('state', '!=', 'sent') ] }"
+                    />
+                    <button name="action_discard"
+                        string="Descartar"
+                        type="object"
+                        class="btn-secondary"
+                        groups="jobcostphasecat.group_rfq_approver"
+                        attrs="{'invisible': [('state', '!=', 'to approve')]}"
                     />
                 </xpath>
                 <!-- Insertar boton: Envio para Aprobación de Precio-->
@@ -221,7 +215,7 @@
                         attrs="{'invisible': [('state', '!=', 'waiting_for_approval') ] }"
                     />
                 </xpath>
-                <!-- Cambio de atributos del botón: action_button_approve. -->
+                <!-- Cambio de atributos del botón: action_button_approve. 
                 <xpath expr="//button[@name='button_confirm']" position="before">
                     <button name="action_buttom_approve_jc"
                         string="Aprobar SdP" type="object"
@@ -229,26 +223,10 @@
                         attrs="{'invisible': [('state', '!=', 'waiting_for_approval') ] }"
                     />
                 </xpath>
-                <!-- Botón Enviar P.O.
-                    <button name="action_rfq_send" states="purchase" string="Send PO by Email" type="object" context="{'send_rfq':False}" data-hotkey="g"/>-->
+                -->
+                <!-- Botón Enviar P.O.-->
                 <xpath expr="//button[@name='action_rfq_send']" position="before">
                 </xpath>
-
-                <!-- Cambiar los atributos del boton: action_send_for_approval 
-                <xpath expr="//button[@name='action_send_for_approval']" position="replace">
-                    <button name="action_send_for_approval" type="object" string="Enviar a Aprobac."
-                        groups="base.group_user" attrs="{'invisible': ['|', '|', '|', '|', '&amp;',
-                                            ('state','!=','draft'),
-                                            ('send_for_approval','=',True), '&amp;',
-                                            ('state','=','draft'),
-                                            ('send_for_approval','=',True), '&amp;',
-                                            ('state','!=','draft'),
-                                            ('send_for_approval','!=',True),
-                                            '|', ('purchase_order_approval', '=', False),
-                                            ('purchase_order_approval_rule_id', '=', False),
-                                            ('purchase_order_approval_rule_ids', '=', [])]}" />
-                </xpath>
-                -->
                 <!-- Cambiar los atributos del boton: button_approve -->
                 <xpath expr="//button[@name='button_approve']" position="attributes">
                     <attribute name="string">6.Confirmar</attribute>

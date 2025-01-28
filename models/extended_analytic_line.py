@@ -5,10 +5,15 @@ class ExtendedAccountAnalyticLine(models.Model):
 
     vehicle_id = fields.Many2one(
         'fleet.vehicle', 
-        string='Vehículo',
+        string='Vehículo-1ext',
         compute='_compute_vehicle_id',
         store=True
     )
+    phase_id = fields.Many2one("project.phaseproject",
+                               string="Fase",
+                               tracking=True,
+                               domain="[('account_analytic_id', '=', account_analytic_id)]")
+
 
     @api.depends('account_id')
     def _compute_vehicle_id(self):

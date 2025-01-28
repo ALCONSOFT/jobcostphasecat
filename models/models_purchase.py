@@ -99,12 +99,14 @@ class PurchaseOrder(models.Model):
                 if not float_is_zero(line.qty_to_invoice, precision_digits=precision):
                     if pending_section:
                         line_vals = pending_section._prepare_account_move_line()
-                        line_vals.update({'sequence': sequence})
+                        #line_vals.update({'sequence': sequence}) 2025.01.27
+                        line_vals.update({'sequence': sequence, 'phase_id': line.phase_id.id})
                         invoice_vals['invoice_line_ids'].append((0, 0, line_vals))
                         sequence += 1
                         pending_section = None
                     line_vals = line._prepare_account_move_line()
-                    line_vals.update({'sequence': sequence})
+                    #line_vals.update({'sequence': sequence}) 2025.01.27    Se agrega la fase a la factura
+                    line_vals.update({'sequence': sequence, 'phase_id': line.phase_id.id})
                     invoice_vals['invoice_line_ids'].append((0, 0, line_vals))
                     sequence += 1
             invoice_vals_list.append(invoice_vals)
@@ -189,6 +191,11 @@ class PurchaseOrderLine(models.Model):
     notes = fields.Text(string='Notes')
     hide = fields.Boolean(string='Hide in Report', default=False)
     discount = fields.Float(string="Discount (%)", digits="Discount")
+    phase_id = fields.Many2one("project.phaseproject",
+                               string="Fase",
+                               tracking=True,
+                               domain="[('account_analytic_id', '=', account_analytic_id)]")
+    
 
     _sql_constraints = [
         (
