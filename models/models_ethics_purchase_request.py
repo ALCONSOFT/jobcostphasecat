@@ -224,6 +224,8 @@ class EthicsPurchaseRequest(models.Model):
                                                          'display_type': False, 
                                                          'vehicle_id': line.vehicle_id.id,
                                                          'account_analytic_id': line.account_analytic_id.id,
+                                                         'analytic_distribution': {str(line.account_analytic_id.id): 100.0},
+                                                         'phase_id': line.phase_id.id,
                                                          'date_planned': time.strftime('%Y-%m-%d')}))
         for vendor,lines in purchase_dict.items():
             purchase_id = self.env['purchase.order'].create({
@@ -341,7 +343,13 @@ class EthicsPuchasRequestLine(models.Model):
     product_qty = fields.Float('Quantity', default=1, tracking=True)
     product_uom = fields.Many2one('uom.uom', related='product_id.uom_po_id', tracking=True,
         help="This comes from the product form.")
-    vendor_ids = fields.Many2many('res.partner', tracking=True)    
+    vendor_ids = fields.Many2many('res.partner', tracking=True)
+    # 2025.01.29: Agregando campo de Fase
+    phase_id = fields.Many2one("project.phaseproject",
+                               string="Fase",
+                               tracking=True,
+                               domain="[('account_analytic_id', '=', account_analytic_id)]")
+
 
     def _default_vehicle_id(self):
         user_id = self.env.user.id
@@ -384,7 +392,8 @@ class BackEthicsPurchaseRequestLine(models.TransientModel):
 class PurchaseOrders(models.Model):
     _inherit = 'purchase.order'
 
-    vehicle_id = fields.Many2one('fleet.vehicle', string='Vehicle', index='btree_not_null')
+    #vehicle_id = fields.Many2one('fleet.vehicle', string='Vehicle', index='btree_not_null')
+    vehicle_id = fields.Many2one('fleet.vehicle.data', string='Vehículo', tracking=True)
     payment_term_id = fields.Many2one('account.payment.term', string='Payment Terms', tracking=True)
     account_analytic_id = fields.Many2one('account.analytic.account', readonly=False, string='Cuenta Analítica')
     # Extendiendo el campo 'state' para agregar el nuevos estados
@@ -397,9 +406,10 @@ class PurchaseOrders(models.Model):
 
     # Boton Enviar P.O. por email
     def action_rfq_send_jc(self):
-        for rec in self:
-            rec.state = 'done'
         super(PurchaseOrders, self).action_rfq_send()
+        for rec in self:
+            # 2025.01.27: Cambiar estado a 'done' antes de enviar el correo
+            rec.state = 'done'
 
     # Botones en waiting_for_price_revision
     def action_waiting_for_price_revision(self):
@@ -450,6 +460,39 @@ class PurchaseOrders(models.Model):
             print('Estado actual: ', record.state)
         # Llamada al método reject_purchase de la clase base usando super()
         super(PurchaseOrders, self).action_button_approve()
+    def button_approve(self):
+        super(PurchaseOrders, self).button_approve()
+        for rec in self:
+            rec.state = 'purchase'
+    
+    def action_back(self):
+        for rec in self:
+            if rec.state != 'done':
+                if rec.state == 'waiting_for_price_revision':
+                    rec.state = 'draft' 
+                if rec.state == 'waiting_for_price_approval':
+                    rec.state = 'waiting_for_price_revision'
+                if rec.state == 'waiting_for_approval':
+                    rec.state = 'waiting_for_price_approval'
+                if rec.state == 'to approve':
+                    rec.state = 'waiting_for_approval'
+                if rec.state == 'purchase':
+                    rec.state = 'to approve'
+                if rec.state == 'descarted':
+                    if self.env.user.has_group('purchase.group_purchase_manager'):
+                        rec.state = 'waiting_for_approval'
+                    else:
+                        raise ValidationError("Solo los administradores de compras pueden cambiar el estado de 'Descartado'.")
+                    rec.state = 'waiting_for_approval'
+                if rec.state == 'sent':
+                    rec.state = 'draft'
+            else:
+                raise ValidationError("No se puede regresar un pedido ya confirmado.")
+
+    # Botón Descartar Pedido
+    def action_discard(self):
+        for rec in self:
+            rec.state = 'descarted'
 
     """# Botón Rechazar Pedido - Cual funiona bien?????????
     def reject_puchase(self):
@@ -461,8 +504,13 @@ class PurchaseOrders(models.Model):
 class PurchaseOrderLine(models.Model):
     _inherit = 'purchase.order.line'
 
-    vehicle_id = fields.Many2one('fleet.vehicle', string='Vehicle', index='btree_not_null')
+    #vehicle_id = fields.Many2one('fleet.vehicle', string='Vehicle', index='btree_not_null')
+    vehicle_id = fields.Many2one('fleet.vehicle.data', string='Vehículo', tracking=True)
     account_analytic_id = fields.Many2one('account.analytic.account', readonly=False, string='Cuenta Analítica')
+    phase_id = fields.Many2one("project.phaseproject",
+                               string="Fase",
+                               tracking=True,
+                               domain="[('account_analytic_id', '=', account_analytic_id)]")
 
 class FleetVehicleData(models.Model):
     _name = 'fleet.vehicle.data'
