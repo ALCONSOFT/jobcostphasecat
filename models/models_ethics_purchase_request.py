@@ -344,6 +344,12 @@ class EthicsPuchasRequestLine(models.Model):
     product_uom = fields.Many2one('uom.uom', related='product_id.uom_po_id', tracking=True,
         help="This comes from the product form.")
     vendor_ids = fields.Many2many('res.partner', tracking=True)
+    # 2025.01.29: Agregando campo de Fase
+    phase_id = fields.Many2one("project.phaseproject",
+                               string="Fase",
+                               tracking=True,
+                               domain="[('account_analytic_id', '=', account_analytic_id)]")
+
 
     def _default_vehicle_id(self):
         user_id = self.env.user.id

@@ -45,6 +45,7 @@
                 - Agregando opcion de seleccionar vehiculo en la SdP-Solucion al tema de privilegio por flota. 2025.01.25:
                 - Agregando funcionalidad de Fase en SdC, SdP, O.C., Factura. 2025.01.25:
                 - Agregando funcionalidad de Boton de Regresar a Estado Anterior en O.C. 2025.01.27:
+                -----------------------------------------------------------------------------------------
     """,
 
     'author': "Alconsoft",
@@ -54,7 +55,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '25.01.27:13',
+    'version': '25.01.29:05',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',
