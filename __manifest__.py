@@ -46,6 +46,10 @@
                 - Agregando funcionalidad de Fase en SdC, SdP, O.C., Factura. 2025.01.25:
                 - Agregando funcionalidad de Boton de Regresar a Estado Anterior en O.C. 2025.01.27:
                 -----------------------------------------------------------------------------------------
+                - Agregando modificacion en reporte de O.C. personalizacion de Encabezado. 2025.01.30:
+                    * Se debe deactivar el reporte qweb del modulo purchase_stcok.report_purchaseorder_document
+                - Agregando restrincción de eliminacion de documentos en SdC, SdP, O.C. 2025.01.31:
+                - Agregando funcionalidad para fusionar archivos adjuntos al correo. 2025.02.01:
     """,
 
     'author': "Alconsoft",
@@ -55,7 +59,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '25.01.29:05',
+    'version': '25.02.01:21',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',
@@ -92,7 +96,6 @@
         'views/news_views.xml',
         'views/res_company_view.xml',
         'views/views_stock_warehouse.xml',
-        #'report/purchase_order_report_iso.xml',
         'report/purchase_order_report.xml',
         'views/view_account_move.xml',
     ],
