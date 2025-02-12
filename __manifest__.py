@@ -50,6 +50,8 @@
                     * Se debe deactivar el reporte qweb del modulo purchase_stcok.report_purchaseorder_document
                 - Agregando restrincción de eliminacion de documentos en SdC, SdP, O.C. 2025.01.31:
                 - Agregando funcionalidad para fusionar archivos adjuntos al correo. 2025.02.01:
+                    - Corrigiendo incidencia donde los correos no se marcaban como enviados. 2025.02.11:
+                -----------------------------------------------------------------------------------------
     """,
 
     'author': "Alconsoft",

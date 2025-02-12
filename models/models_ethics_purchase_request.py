@@ -474,6 +474,9 @@ class PurchaseOrders(models.Model):
         self = self.with_context(lang=lang)
         if self.state in ['draft', 'sent']:
             ctx['model_description'] = _('Request for Quotation')
+            # Change the state of the purchase order to 'sent'
+            if self.state == 'draft':
+                self.state = 'sent'
         else:
             ctx['model_description'] = _('Purchase Order')
 
@@ -488,7 +491,7 @@ class PurchaseOrders(models.Model):
             'context': ctx,
             'attached_to_email': True,
             'attachment_ids': attachment_ids,
-        }       
+        }
     # Botones en waiting_for_price_revision
     def action_waiting_for_price_revision(self):
         for rec in self:
