@@ -51,6 +51,7 @@
                 - Agregando restrincción de eliminacion de documentos en SdC, SdP, O.C. 2025.01.31:
                 - Agregando funcionalidad para fusionar archivos adjuntos al correo. 2025.02.01:
                     - Corrigiendo incidencia donde los correos no se marcaban como enviados. 2025.02.11:
+                    - Corrigiendo incidencia de privielgios.  Se creo Privilegio de Usuario Interno para adjuntos. 2025.02.12:
                 -----------------------------------------------------------------------------------------
     """,
 
@@ -61,7 +62,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '25.02.01:21',
+    'version': '2025.02.12-13:43',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',
