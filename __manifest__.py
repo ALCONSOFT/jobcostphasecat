@@ -53,6 +53,8 @@
                     - Corrigiendo incidencia donde los correos no se marcaban como enviados. 2025.02.11:
                     - Corrigiendo incidencia de privielgios.  Se creo Privilegio de Usuario Interno para adjuntos. 2025.02.12:
                 -----------------------------------------------------------------------------------------
+                - Agregando funcionalidad: Agregar botón que permita crear una SdP en Transferencia Interna y
+                    enlace la SdP con la transferencia interna del inventario.
     """,
 
     'author': "Alconsoft",
@@ -62,7 +64,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '2025.02.12-13:43',
+    'version': '2025.02.13 - 09:55',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',
@@ -101,6 +103,7 @@
         'views/views_stock_warehouse.xml',
         'report/purchase_order_report.xml',
         'views/view_account_move.xml',
+        'views/views_res_partners.xml'
     ],
     # only loaded in demonstration mode
     'demo': [

@@ -411,6 +411,7 @@ class PurchaseOrders(models.Model):
                                             ('waiting_for_approval','Esperando Aprobación'),
                                             ('to approve','Por Aprobar @ Compras'),
                                             ('descarted','Descartado'),
+                                            ('internal_transfer', 'Transferencia Interna')
         ], ondelete={'waiting_for_approval': 'cascade'})
     send_all_attachments = fields.Boolean(string='Enviar todos los adjuntos', default=False)
 

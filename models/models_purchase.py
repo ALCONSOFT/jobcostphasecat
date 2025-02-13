@@ -188,6 +188,45 @@ class PurchaseOrder(models.Model):
                     subtype_id=self.env.ref('mail.mt_note').id)
         return True
     #######################################################################################################################
+    # Crear transferencia Interna desde purchase en jobcostphasecat:
+    #   Se crea la accion de crear transferncia Itnerna desde la SdP
+ 
+    internal_transfer = fields.Boolean(string='Transferencia Interna', default=False)
+
+    @api.onchange('internal_transfer')
+    def _onchange_internal_transfer(self):
+        if self.internal_transfer:
+            self.state = 'internal_transfer'
+    
+    def action_create_internal_transfer(self):
+        if self.internal_transfer != True:
+            raise UserError(_('La SdP debe estar marcada "Transferencia Interna" para crear una transferencia interna.'))
+            
+        StockPicking = self.env['stock.picking']
+        for order in self:
+            if any(product.type in ['product', 'consu'] for product in order.order_line.product_id):
+                if not order.partner_id.internal_supplier:
+                    raise UserError(_('The supplier must be marked as an internal supplier to create an internal transfer.'))
+                order = order.with_company(order.company_id)
+                picking_type = self.env.ref('stock.picking_type_internal')
+                picking_vals = {
+                    'picking_type_id': picking_type.id,
+                    #'location_id': order.partner_id.property_stock_supplier.id,
+                    'location_id': order.partner_id.internal_transfer_warehouse_id.lot_stock_id.id,
+                    'location_dest_id': order.picking_type_id.default_location_dest_id.id,
+                    'origin': order.name,
+                    'company_id': order.company_id.id,
+                    'move_type': 'direct',
+                }
+                picking = StockPicking.create(picking_vals)
+                moves = order.order_line.filtered(lambda line: not line.hide)._create_stock_moves(picking)
+                moves._action_confirm()
+                picking.action_assign()
+                picking.message_post_with_view('mail.message_origin_link',
+                    values={'self': picking, 'origin': order},
+                    subtype_id=self.env.ref('mail.mt_note').id)
+        self.state = 'internal_transfer'
+        return True
 
 
 class PurchaseOrderLine(models.Model):
