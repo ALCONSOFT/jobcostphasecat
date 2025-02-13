@@ -13,3 +13,5 @@ from . import res_company
 from . import models_stock_warehouse
 from . import extended_analytic_line
 from . import account_move
+from . import models_mail_compose_message
+from . import models_ir_attachment

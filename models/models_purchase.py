@@ -1,4 +1,5 @@
 from odoo import models, fields, api, SUPERUSER_ID, _
+from odoo.exceptions import UserError
 from odoo.tools import float_is_zero
 from itertools import groupby
 
@@ -7,6 +8,14 @@ class PurchaseOrder(models.Model):
 
     total_price_total = fields.Monetary(compute='_compute_total_price_total', string='Total Price Total')
 
+    def unlink(self):
+        for record in self:
+            if record.state != 'cancel':
+                    raise UserError("No puedes eliminar este registro. Debes cancelarlo primero.**")
+            else:
+                raise   UserError("No puedes eliminar este registro. Consulte con su administrador.")
+        return super(EthicsPurchaseRequest, self).unlink()
+    
     @api.depends('order_line.price_total')
     def _compute_total_price_total(self):
         for order in self:

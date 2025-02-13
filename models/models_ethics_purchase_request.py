@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
-from odoo import models, fields, api, _
+from odoo import models, fields, api, _, tools
+from odoo.addons.mail.models.mail_template import MailTemplate
 import logging
 from odoo import tools
 from datetime import timedelta
 import time
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError, UserError
 import pytz
 import datetime
 from zoneinfo import ZoneInfo
@@ -14,6 +15,14 @@ contexto_purchase_request = []
 
 class EthicsPurchaseRequest(models.Model):
     _inherit = 'purchase.request'
+
+    def unlink(self):
+        for record in self:
+            if record.state != 'cancel':
+                    raise UserError("No puedes eliminar este registro. Debes cancelarlo primero.*")
+            else:
+                raise   UserError("No puedes eliminar este registro. Consulte con su administrador.")
+        return super(EthicsPurchaseRequest, self).unlink()
 
     def action_waiting_for_audit(self):
         for rec in self:
@@ -403,6 +412,7 @@ class PurchaseOrders(models.Model):
                                             ('to approve','Por Aprobar @ Compras'),
                                             ('descarted','Descartado'),
         ], ondelete={'waiting_for_approval': 'cascade'})
+    send_all_attachments = fields.Boolean(string='Enviar todos los adjuntos', default=False)
 
     # Boton Enviar P.O. por email
     def action_rfq_send_jc(self):
@@ -410,7 +420,81 @@ class PurchaseOrders(models.Model):
         for rec in self:
             # 2025.01.27: Cambiar estado a 'done' antes de enviar el correo
             rec.state = 'done'
+    # Boton Enviar P.O. por email Personalizado            
+    import logging
+    _logger = logging.getLogger(__name__)
+    def action_rfq_send(self):
+        if self.send_all_attachments:
+            '''
+            This function opens a window to compose an email, with the edi purchase template message loaded by default
+            '''
+            self.ensure_one()
+            ir_model_data = self.env['ir.model.data']
+            try:
+                if self.env.context.get('send_rfq', False):
+                    template_id = ir_model_data._xmlid_lookup('purchase.email_template_edi_purchase')[2]
+                else:
+                    template_id = ir_model_data._xmlid_lookup('purchase.email_template_edi_purchase_done')[2]
+            except ValueError:
+                template_id = False
+            try:
+                compose_form_id = ir_model_data._xmlid_lookup('mail.email_compose_message_wizard_form')[2]
+            except ValueError:
+                compose_form_id = False
+            
+            # Retrieve all attachments related to the RFQ
+            attachment_ids = self.env['ir.attachment'].search([
+                ('res_model', '=', 'purchase.order'),
+                ('res_id', '=', self.id)
+            ]).ids
+            
+            _logger.info("Attachments found: %s", attachment_ids)  # Depuración
+            
+            ctx = dict(self.env.context or {})
+            ctx.update({
+                'default_model': 'purchase.order',
+                'active_model': 'purchase.order',
+                'active_id': self.ids[0],
+                'default_res_id': self.ids[0],
+                'default_use_template': bool(template_id),
+                'default_template_id': template_id,
+                'default_composition_mode': 'comment',
+                'default_email_layout_xmlid': "mail.mail_notification_layout_with_responsible_signature",
+                'default_attachment_ids': [(6, 0, attachment_ids)],  # Cambio aquí
+            })
 
+            # In the case of a RFQ or a PO, we want the "View..." button in line with the state of the
+            # object. Therefore, we pass the model description in the context, in the language in which
+            # the template is rendered.
+            lang = self.env.context.get('lang')
+            if {'default_template_id', 'default_model', 'default_res_id'} <= ctx.keys():
+                template = self.env['mail.template'].browse(ctx['default_template_id'])
+                if template and template.lang:
+                    lang = template._render_lang([ctx['default_res_id']])[ctx['default_res_id']]
+
+            self = self.with_context(lang=lang)
+            if self.state in ['draft', 'sent']:
+                ctx['model_description'] = _('Request for Quotation')
+                # Change the state of the purchase order to 'sent'
+                if self.state == 'draft':
+                    self.state = 'sent'
+            else:
+                ctx['model_description'] = _('Purchase Order')
+
+            return {
+                'name': _('Compose Email for Purchase Order 02'),
+                'type': 'ir.actions.act_window',
+                'view_mode': 'form',
+                'res_model': 'mail.compose.message',
+                'view_id': compose_form_id if compose_form_id else False,
+                'views': [(compose_form_id, 'form')] if compose_form_id else [],
+                'target': 'new',
+                'context': ctx,
+                'attached_to_email': True,
+                'attachment_ids': attachment_ids,
+            }
+        else:
+            return super(PurchaseOrders, self).action_rfq_send()
     # Botones en waiting_for_price_revision
     def action_waiting_for_price_revision(self):
         for rec in self:

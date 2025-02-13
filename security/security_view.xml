@@ -74,5 +74,10 @@
             <field name="name">7.Enviador@ de P.O.</field>
             <field name="category_id" ref="module_category_rfq"/>
         </record>
+        <!--Usaurio Adjuntador-->
+        <record id="group_attachment_user" model="res.groups">
+            <field name="name">Attachment User</field>
+            <field name="category_id" ref="base.module_category_hidden"/>
+        </record>        
     </data>
 </odoo>

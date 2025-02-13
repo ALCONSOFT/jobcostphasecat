@@ -54,6 +54,7 @@
                     <field name="account_analytic_id"/>
                     <field name="vehicle_id"/>
                     <field name="payment_term_id"/>
+                    <field name="send_all_attachments" />
                 </xpath>
                 <!-- Agregar campo computado para subtotal-->
                 <field name="tax_totals" position="before">

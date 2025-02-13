@@ -9,9 +9,8 @@
         <field name="arch" type="xml">
             <xpath expr="//tree" position="inside">
                 <!-- Añade aquí campos adicionales si es necesario, ejemplo: -->
-                <field name="vehicle_id" optional="hide"/>
-                <field name="account_analytic_id" optional="hide"/>
-
+                <field name="vehicle_id" optional="show"/>
+                <field name="account_analytic_id" optional="show"/>
             </xpath>
             <xpath expr="//field[@name='priority']" position="after">
                 <field name="sequence_alter"/>
@@ -43,11 +42,12 @@
         <field name="arch" type="xml">
             <field name="request_responsible" position="after">
                 <field name="picking_type_id" string="Entregar a Almacén:" domain="[('code', '=', 'incoming')]"/>
-                <field name="vehicle_id" optional="hide"/>
-                <field name="account_analytic_id" optional="hide"/>
+                <field name="vehicle_id" optional="show"/>
+                <field name="account_analytic_id" optional="show"/>
             </field>
             <xpath expr="//field[@name='vendor_ids']" position="after">
-                <field name="vehicle_id" domain="[]" optional="hide"/>
+                <field name="vehicle_id" domain="[]" optional="show"/>
+                <field name="phase_id" domain="[]" optional="show"/>
             </xpath>
             <!-- Botón para generar el reporte QWeb -->
             <xpath expr="//header" position="inside">
