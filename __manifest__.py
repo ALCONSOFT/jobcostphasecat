@@ -54,7 +54,14 @@
                     - Corrigiendo incidencia de privielgios.  Se creo Privilegio de Usuario Interno para adjuntos. 2025.02.12:
                 -----------------------------------------------------------------------------------------
                 - Agregando funcionalidad: Agregar botón que permita crear una SdP en Transferencia Interna y
-                    enlace la SdP con la transferencia interna del inventario.
+                    enlace la SdP con la transferencia interna del inventario. 2025.02.13:
+                - Corrigiendo incidencia: El vehiculo no pasa de O.C. a la factura. 2025.02.14:
+                - Corrigiendo incidencia: Cambio de termino: Vendedor por Usuario en vista: Lista de SdP. 2025.02.14:
+                - Agregando funcionalidad: Permitir que la cantidad del producto pedido se pueda modificar en la SdP
+                    en los estados: draft, sent y waiting_for_price_revision. 2025.02.18
+                - Corrigiendo incidencia: Solo Compras puede realizar cambios en la cantidad en la SdP. 2025.02.19
+                - Corrigiendo incidencia: Implementar secciones y notas a la SdC: 2025.02.18
+
     """,
 
     'author': "Alconsoft",
@@ -64,7 +71,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '2025.02.13 - 09:55',
+    'version': '2025.02.18 - 16:27',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',

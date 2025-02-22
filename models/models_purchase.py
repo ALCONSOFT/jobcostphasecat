@@ -115,7 +115,9 @@ class PurchaseOrder(models.Model):
                         pending_section = None
                     line_vals = line._prepare_account_move_line()
                     #line_vals.update({'sequence': sequence}) 2025.01.27    Se agrega la fase a la factura
-                    line_vals.update({'sequence': sequence, 'phase_id': line.phase_id.id})
+                    line_vals.update({'sequence': sequence,
+                        'phase_id': line.phase_id.id,
+                        'vehicle_id': line.vehicle_id.id})
                     invoice_vals['invoice_line_ids'].append((0, 0, line_vals))
                     sequence += 1
             invoice_vals_list.append(invoice_vals)
@@ -273,6 +275,17 @@ class PurchaseOrderLine(models.Model):
                     'message': 'No está permitido cambiar la cantidad de este producto.',
                 }
             }
+        else:
+            # Solo los usuarios miembros del grupo de Compras pueden modificar la cantidad en la SdP
+            if not self.env.user.has_group('purchase.group_purchase_manager'):
+                return {
+                    'warning': {
+                        'title': 'No permitido',
+                        'message': 'Solo el grupo de Administradores en Compras puede modificar la cantidad en la SdP.',
+                }   
+            }
+            
+
     @api.onchange('hide')
     def _onchange_hide(self):
         if self.order_id:

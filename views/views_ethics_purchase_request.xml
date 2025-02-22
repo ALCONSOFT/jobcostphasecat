@@ -145,6 +145,141 @@
         </field>
     </record>
 
+<record id="view_purchase_request_form_inherit_jobcostphasecat2" model="ir.ui.view">
+    <field name="name">purchase.request.form.inherit</field>
+    <field name="model">purchase.request</field>
+    <field name="inherit_id" ref="ethics_purchase_request.view_purchase_request_form"/>
+    <field name="arch" type="xml">
+
+        <!-- Agregando campo state en la vista -->
+        <xpath expr="//sheet" position="inside">
+            <field name="state" invisible="1"/>
+        </xpath>
+
+        <!-- Reemplazamos la pestaña "Request Lines" -->
+        <xpath expr="//notebook/page[@name='request_lines']" position="replace">
+            <page string="Products" name="products">
+                <field name="pr_lines" widget="section_and_note_one2many" mode="tree,kanban"
+                    context="{'default_state': 'draft'}"
+                    attrs="{'readonly': [('state', 'in', ('confirm', 'cancel'))]}">
+                    
+                    <tree string="Purchase Request Lines" editable="bottom">
+                        <control>
+                            <create name="add_product_control" string="Add a product"/>
+                            <create name="add_section_control" string="Add a section" context="{'default_display_type': 'line_section'}"/>
+                            <create name="add_note_control" string="Add a note" context="{'default_display_type': 'line_note'}"/>
+                        </control>
+                        
+                        <field name="display_type" invisible="1"/>
+                        <field name="sequence" widget="handle"/>
+                        <field name="state" invisible="1"/>
+                        <field name="product_id" 
+                               attrs="{'readonly': [('state', 'not in', ('draft'))], 'required': [('display_type', '=', False)]}"
+                               domain="[('purchase_ok', '=', True), '|', ('company_id', '=', False), ('company_id', '=', parent.company_id)]"/>
+                        <field name="name" widget="section_and_note_text"/>
+                        <field name="product_qty"/>
+                        <field name="product_uom"/>
+                        <field name="vendor_ids" widget="many2many_tags" 
+                               attrs="{'column_invisible': [('parent.state', 'not in', ['waiting_for_approver','confirm','waiting_for_buyer'])]}"/>
+                        <field name="price_unit" optional="hide"/>
+                        <field name="price_subtotal" optional="hide" widget="monetary"/>
+                        <field name="account_analytic_id" optional="show"/>
+                        <field name="vehicle_id" optional="show"/>
+                        <field name="phase_id" optional="show"/>
+                    </tree>
+
+                    <form string="Purchase Request Line">
+                        <field name="display_type" invisible="1"/>
+                        
+                        <group attrs="{'invisible': [('display_type', '!=', False)]}">
+                            <group>
+                                <field name="product_id" widget="many2one_barcode"
+                                       domain="[('purchase_ok', '=', True), '|', ('company_id', '=', False), ('company_id', '=', parent.company_id)]"/>
+                                <field name="product_qty"/>
+                                <field name="product_uom"/>
+                                <field name="price_unit"/>
+                            </group>
+                        </group>
+
+                        <!-- NUEVO: Permitimos editar `vendor_ids` en las secciones y notas -->
+                        <group attrs="{'invisible': [('display_type', '=', False)]}">
+                            <label for="name" string="Section Name (eg. Products, Services)" attrs="{'invisible': [('display_type', '!=', 'line_section')]}"/>
+                            <label for="name" string="Note" attrs="{'invisible': [('display_type', '!=', 'line_note')]}"/>
+                            
+                            <field name="name" nolabel="1"/>
+                            <field name="vendor_ids" widget="many2many_tags"/>
+                        </group>
+                    </form>
+
+                    <kanban>
+                        <field name="name"/>
+                        <field name="product_id"/>
+                        <field name="product_qty"/>
+                        <field name="product_uom"/>
+                        <field name="price_subtotal"/>
+                        <field name="price_unit"/>
+                        <field name="display_type"/>
+                        <field name="vendor_ids"/>
+                        <field name="account_analytic_id"/> 
+                        <field name="vehicle_id"/>
+                        <field name="phase_id"/>
+
+                        <templates>
+                            <t t-name="kanban-box">
+                                <div t-attf-class="oe_kanban_card {{ record.display_type.raw_value ? 'o_is_' + record.display_type.raw_value : '' }}">
+                                    <t t-if="!record.display_type.raw_value">
+                                        <div class="row">
+                                            <div class="col-8">
+                                                <strong>
+                                                    <span t-esc="record.product_id.value"/>
+                                                </strong>
+                                            </div>
+                                            <div class="col-4 text-end">
+                                                <strong>
+                                                    <span t-esc="record.price_subtotal.value"/>
+                                                </strong>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-12 text-muted">
+                                                <span>
+                                                    Quantity:
+                                                    <t t-esc="record.product_qty.value"/>
+                                                    <t t-esc="record.product_uom.value"/>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-12 text-muted">
+                                                <span>
+                                                    Unit Price:
+                                                    <t t-esc="record.price_unit.value"/>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </t>
+
+                                    <!-- NUEVO: Mostramos `vendor_ids` en Secciones y Notas -->
+                                    <div t-elif="record.display_type.raw_value === 'line_section' || record.display_type.raw_value === 'line_note'" class="row">
+                                        <div class="col-8">
+                                            <span t-esc="record.name.value"/>
+                                        </div>
+                                        <div class="col-4">
+                                            <span t-esc="record.vendor_ids.value"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </t>
+                        </templates>
+                    </kanban>
+                </field>
+            </page>
+        </xpath>
+
+    </field>
+</record>
+
+
     <record id="view_fleet_vehicle_data_list" model="ir.ui.view">
         <field name="name">fleet.vehicle.data.list</field>
         <field name="model">fleet.vehicle.data</field>
