@@ -229,8 +229,90 @@ class PurchaseOrder(models.Model):
                     subtype_id=self.env.ref('mail.mt_note').id)
         self.state = 'internal_transfer'
         return True
+    #######################################################################################################################
+    def action_create_double_internal_transfer(self):
+        if not self.internal_transfer:
+            raise UserError(_('La SdP debe estar marcada "Transferencia Interna" para crear una transferencia interna.'))
 
+        StockPicking = self.env['stock.picking']
+        StockLocation = self.env['stock.location']
+        StockMove = self.env['stock.move']
+        customers_location = StockLocation.search([('usage', '=', 'customer')], limit=1)
 
+        if not customers_location:
+            raise UserError(_('No se encontró una ubicación de cliente (Customers).'))
+
+        for order in self:
+            if any(product.type in ['product', 'consu'] for product in order.order_line.product_id):
+                if not order.partner_id.internal_supplier:
+                    raise UserError(_('El proveedor debe estar marcado como proveedor interno para crear una transferencia interna.'))
+                
+                order = order.with_company(order.company_id)
+                picking_type_out = order.partner_id.internal_transfer_warehouse_id.out_type_id  # Salida
+                picking_type_in =  order.picking_type_id                                         # Entrada
+                
+                # Transferencia de salida (del almacén origen a Customers)
+                picking_vals_out = {
+                    'picking_type_id': picking_type_out.id,
+                    'location_id': order.partner_id.internal_transfer_warehouse_id.lot_stock_id.id,
+                    'location_dest_id': customers_location.id,
+                    'origin': order.name,
+                    'company_id': order.company_id.id,
+                    'move_type': 'direct',
+                    'partner_id': order.partner_id.id,
+                }
+                picking_out = StockPicking.create(picking_vals_out)
+                moves_out = order.order_line.filtered(lambda line: not line.hide)._create_stock_moves(picking_out)
+                for move in moves_out:
+                    move.location_id = picking_out.location_id
+                    move.location_dest_id = picking_out.location_dest_id
+                moves_out._action_confirm()
+                picking_out.action_assign()
+                
+                # Transferencia de entrada (de Customers al almacén destino)
+                picking_vals_in = {
+                    'picking_type_id': picking_type_in.id,
+                    'location_id': customers_location.id,
+                    'location_dest_id': order.picking_type_id.default_location_dest_id.id,
+                    'origin': order.name,
+                    'company_id': order.company_id.id,
+                    'move_type': 'direct',
+                    'partner_id': order.partner_id.id,
+                }
+                picking_in = StockPicking.create(picking_vals_in)
+                
+                # Crear movimientos de stock manualmente para la segunda transferencia
+                for move_out in moves_out:
+                    move_vals = {
+                        'name': move_out.name,
+                        'product_id': move_out.product_id.id,
+                        'product_uom_qty': move_out.product_uom_qty,
+                        'product_uom': move_out.product_uom.id,
+                        'picking_id': picking_in.id,
+                        'location_id': customers_location.id,
+                        'location_dest_id': order.picking_type_id.default_location_dest_id.id,
+                        'company_id': order.company_id.id,
+                    }
+                    new_move = StockMove.create(move_vals)
+                
+                picking_in.move_ids._action_confirm()
+                picking_in.action_assign()
+                
+                # Mensajes de seguimiento
+                picking_out.message_post_with_view('mail.message_origin_link',
+                    values={'self': picking_out, 'origin': order},
+                    subtype_id=self.env.ref('mail.mt_note').id)
+                
+                picking_in.message_post_with_view('mail.message_origin_link',
+                    values={'self': picking_in, 'origin': order},
+                    subtype_id=self.env.ref('mail.mt_note').id)
+        
+        self.state = 'internal_transfer'
+        # Agregar las transferencias al histórico de la orden de compra
+        order.picking_ids |= picking_out
+        order.picking_ids |= picking_in
+        return True
+    #######################################################################################################################
 class PurchaseOrderLine(models.Model):
     _inherit = 'purchase.order.line'
 

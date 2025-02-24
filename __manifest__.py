@@ -61,6 +61,9 @@
                     en los estados: draft, sent y waiting_for_price_revision. 2025.02.18
                 - Corrigiendo incidencia: Solo Compras puede realizar cambios en la cantidad en la SdP. 2025.02.19
                 - Corrigiendo incidencia: Implementar secciones y notas a la SdC: 2025.02.18
+                - Corrigiendo incidencia: cambiando la logica de las entregas de Proveedores INternos
+                    - cambaindo la ubicaion origen
+                    - creando dos transferencias: 1 salida del almacen origen y 1 entrada al almacen destino
 
     """,
 
@@ -71,7 +74,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '2025.02.18 - 16:27',
+    'version': '2025.02.22 - 16:50',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',
