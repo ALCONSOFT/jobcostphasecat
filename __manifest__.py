@@ -63,7 +63,14 @@
                 - Corrigiendo incidencia: Implementar secciones y notas a la SdC: 2025.02.18
                 - Corrigiendo incidencia: cambiando la logica de las entregas de Proveedores INternos
                     - cambaindo la ubicaion origen
-                    - creando dos transferencias: 1 salida del almacen origen y 1 entrada al almacen destino
+                    - creando dos transferencias: 1 salida del almacen origen y 1 entrada al almacen destino: 2025.02.24
+                -----------------------------------------------------------------------------------------
+                - Corrigiendo incidencia: Agregando funcionalidades: Agregar al “lineas de pedidos de compra”:
+                     - la cuenta analitica,
+                     - analitico,
+                     - fase,
+                     - vehiculo.
+                     - Enlace a la SdP. 
 
     """,
 
@@ -74,7 +81,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '2025.02.22 - 16:50',
+    'version': '2025.02.24 - 10:23',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',
@@ -113,7 +120,8 @@
         'views/views_stock_warehouse.xml',
         'report/purchase_order_report.xml',
         'views/view_account_move.xml',
-        'views/views_res_partners.xml'
+        'views/views_res_partners.xml',
+        'views/views_purchase_order_line_tree.xml'
     ],
     # only loaded in demonstration mode
     'demo': [
