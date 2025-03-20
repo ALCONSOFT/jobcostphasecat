@@ -185,7 +185,11 @@ class EthicsPurchaseRequest(models.Model):
         3️⃣ Si todas las líneas de productos tienen vendors, aprueba la SdC.
         4️⃣ Si faltan vendors, abre un asistente para corregirlo.
         """
-
+        # validar que no existan SdP con id de la purchase.request actual
+        # Validar que no existan SdPs con id de la purchase.request actual
+        existing_po = self.env['purchase.order'].search([('pr_ref_id', '=', self.id)])
+        if existing_po:
+            raise UserError(_("Ya existen Solicitudes de Pedido (SdP) generadas para esta Solicitud de Compra (SdC)."))
         # 🔹 1️⃣ AGREGAR LOS PROVEEDORES A LAS SECCIONES Y NOTAS
         for section_or_note in self.pr_lines.filtered(lambda l: l.display_type in ['line_section', 'line_note']):
             # Obtener todos los vendors de las líneas de productos
@@ -373,7 +377,7 @@ class EthicsPuchasRequestLine(models.Model):
                                 string='Vehículo',
                                 index='btree_not_null',
                                 domain=[],
-                                default=lambda self: self._default_vehicle_id(), tracking=True)
+                                tracking=True)
 
     account_analytic_id = fields.Many2one('account.analytic.account',
                                             readonly=False,
@@ -670,7 +674,6 @@ class PurchaseOrders(models.Model):
 class PurchaseOrderLine(models.Model):
     _inherit = 'purchase.order.line'
 
-    #vehicle_id = fields.Many2one('fleet.vehicle', string='Vehicle', index='btree_not_null')
     vehicle_id = fields.Many2one('fleet.vehicle.data', string='Vehículo', tracking=True)
     account_analytic_id = fields.Many2one('account.analytic.account', readonly=False, string='Cuenta Analítica')
     phase_id = fields.Many2one("project.phaseproject",

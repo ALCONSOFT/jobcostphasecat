@@ -313,6 +313,67 @@ class PurchaseOrder(models.Model):
         order.picking_ids |= picking_in
         return True
     #######################################################################################################################
+    # recalcular los estados de las SdP para que se muestre el estado correcto en la vistas: camp invoice_status
+        # 2025.01.26
+    @api.depends('state', 'order_line.qty_to_invoice', 'order_line.hide', 'invoice_ids', 'write_date')
+    def _get_invoiced(self):
+        precision = self.env['decimal.precision'].precision_get('Product Unit of Measure')
+        for order in self:
+            if order.state not in ('purchase', 'done'):
+                order.invoice_status = 'no'
+                continue
+
+            # Filtrar solo líneas que no sean de visualización ni estén ocultas
+            valid_lines = order.order_line.filtered(lambda l: not l.display_type and not l.hide)
+            if any(
+                not float_is_zero(line.qty_to_invoice, precision_digits=precision)
+                for line in valid_lines
+            ):
+                order.invoice_status = 'to invoice'
+            elif valid_lines and all(
+                float_is_zero(line.qty_to_invoice, precision_digits=precision)
+                for line in valid_lines
+            ) and order.invoice_ids:
+                order.invoice_status = 'invoiced'
+            else:
+                order.invoice_status = 'no'
+    #######################################################################################################################
+    # Agregar campo de historial de compras a la orden de compra    
+    # 2025.02.26: Campo one2many para mostrar el historial
+    purchase_history_ids = fields.One2many(
+        comodel_name='purchase.order.line',
+        inverse_name='order_id',
+        string='Historial de Compras',
+        compute='_compute_purchase_history',
+        store=False
+    )
+    
+    @api.depends('order_line.product_id')  # o los campos que quieras detonar
+    def _compute_purchase_history(self):
+        for order in self:
+            # Aquí decides la lógica de filtrado que quieras aplicar:
+            # Por ejemplo, mostrar TODAS las líneas de orden de compra
+            # pasadas que tengan los mismos productos del pedido actual
+            # y/o mismo proveedor.
+            
+            # Si quieres filtrar por el partner (el proveedor actual):
+            partner_id = order.partner_id.id
+            
+            # Obtener todos los product_ids de este pedido
+            product_ids = order.order_line.mapped('product_id').ids
+            
+            # Buscar líneas de compra con esos productos y ese partner
+            # y que NO sean la orden de compra actual (por si no quieres duplicar).
+            lines = self.env['purchase.order.line'].search([
+                ('product_id', 'in', product_ids),
+                ('order_id.partner_id', '=', partner_id),
+                ('order_id', '!=', order.id),
+                # si quieres excluir borradores, recibidas, etc. 
+                # puedes añadir condiciones sobre ('order_id.state', '=', 'purchase'), etc.
+            ])
+            
+            order.purchase_history_ids = lines
+
 class PurchaseOrderLine(models.Model):
     _inherit = 'purchase.order.line'
 
@@ -377,3 +438,83 @@ class PurchaseOrderLine(models.Model):
     def _onchange_account_analytic_id(self):
         if self.analytic_distribution:
             self.analytic_distribution = {str(self.account_analytic_id.id): 100.0}
+
+    x_is_incomplete = fields.Boolean(
+        string="Diferencia Cantidades",
+        compute="_compute_is_incomplete",
+        store=True,  # Opcional si deseas que sea un campo almacenado
+    )
+
+    @api.depends('product_qty', 'qty_received')
+    def _compute_is_incomplete(self):
+        for line in self:
+            line.x_is_incomplete = (line.product_qty != line.qty_received)
+
+    # 2025.02.26: Agregar campo partner_id para historial de compras a la orden de compra
+    partner_id = fields.Many2one(
+        comodel_name='res.partner',
+        string='Proveedor (related)',
+        related='order_id.partner_id',
+        store=False,  # o True si deseas guardarlo
+        readonly=True
+    )
+    # 2025.02.26: Agregar campo order_id para historial de compras a la orden de compra
+    line_history_ids = fields.One2many(
+        comodel_name='purchase.order.line',
+        inverse_name='id',       # Sin inverse real; será un compute
+        string='Historial de esta línea',
+        compute='_compute_line_history_ids',
+        store=False,
+    )
+
+    @api.depends('product_id', 'order_id.partner_id')
+    def _compute_line_history_ids(self):
+        for line in self:
+            # Definir qué se considera “historial”.
+            # Por ejemplo, líneas de compra con el mismo product_id y partner
+            # en órdenes confirmadas o realizadas, excluyendo la línea actual.
+            domain = [
+                ('product_id', '=', line.product_id.id),
+                ('order_id.partner_id', '=', line.order_id.partner_id.id),
+                ('order_id.state', 'in', ['purchase','done']),  # si deseas sólo confirmadas o terminadas
+                ('id', '!=', line.id),  # excluir la línea actual
+            ]
+            line.line_history_ids = self.env['purchase.order.line'].search(domain)
+    # 2025.02.26: Agregar acción para ver historial de compras en la orden de compra por linea
+    def action_view_line_history(self):
+        """
+        Retorna una acción (ventana) que muestra las líneas de compra
+        que tengan el mismo producto y el mismo proveedor, 
+        excluyendo la línea actual.
+        """
+        self.ensure_one()  # aseguramos que haya exactamente una línea
+        domain = [
+            ('product_id', '=', self.product_id.id),
+            #('order_id.partner_id', '=', self.order_id.partner_id.id),
+            ('id', '!=', self.id),
+            # Opcional: si quieres sólo ver OCs en estado confirmado o hecho:
+            ('order_id.state', 'in', ['purchase', 'done', 'descarted']),
+        ]
+        return {
+            'name': 'Historial de Compras',
+            'type': 'ir.actions.act_window',
+            'res_model': 'purchase.order.line',
+            'view_mode': 'tree,form',
+            'domain': domain,
+            # target = 'current' abre la vista en la misma pestaña
+            # target = 'new' la abre como pop-up
+            'target': 'current',
+        }
+    # 2025.02.26: Agregar campo pr_ref_ids para historial de compras a la orden de compra
+    pr_ref_ids = fields.Many2one(
+        related='order_id.pr_ref_id',
+        string='PR References',
+        store=False,
+        readonly=True
+    )
+
+    @api.depends('order_id.order_line.pr_ref_ids')
+    def _compute_pr_ref_ids(self):
+        for line in self:
+            # si pr_ref_ids es un Many2many, por ejemplo:
+            line.pr_ref_ids = [(6, 0, [line.order_id.pr_ref_id.id])]

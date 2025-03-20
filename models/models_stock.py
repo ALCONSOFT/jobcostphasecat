@@ -189,6 +189,11 @@ class JC_StockMove(models.Model):
 
                 return
 
+    def action_show_details(self):
+        # Method disabled/not implemented
+        raise UserError(_("This action is not available."))
+    
+
 
 class JC_StockMoveLine(models.Model):
     _inherit = "stock.move.line"
