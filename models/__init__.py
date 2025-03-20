@@ -16,3 +16,4 @@ from . import extended_analytic_line
 from . import account_move
 from . import models_mail_compose_message
 from . import models_ir_attachment
+from . import models_products

@@ -64,13 +64,30 @@
                 - Corrigiendo incidencia: cambiando la logica de las entregas de Proveedores INternos
                     - cambaindo la ubicaion origen
                     - creando dos transferencias: 1 salida del almacen origen y 1 entrada al almacen destino: 2025.02.24
-                -----------------------------------------------------------------------------------------
                 - Corrigiendo incidencia: Agregando funcionalidades: Agregar al “lineas de pedidos de compra”:
                      - la cuenta analitica,
                      - analitico,
                      - fase,
                      - vehiculo.
                      - Enlace a la SdP. 
+                -----------------------------------------------------------------------------------------                
+                - Agregar funcionanalidad: Habilitar bitácora del modelo: product_template
+                - Elimnar funcionalidad: memorizar los vehhiculos en la SdC. 2025.02.25
+                - NO DISPONIBLE: Agregando funcionalidad: Agregar montos exentos de impuestos y no exentos en al Orden de Compra. 2025.02.25
+                - Inhabilitar opcion de: action_views_details en stock.move. 2025.02.26
+                - Agregando funcionalidad: recalcular estatus de la factura en las SdP. 2025.02.26
+                - Agregando funcionalidad: Agregar filtro de cantidades recibidas != de cantidades pedidas en la SdP. 2025.02.26
+                - Agregando funcionalidas:
+                    Historial de cantidades pedidas, precios de Productos a nivel de SdC, Órdenes de Compras.
+                    Para ser agregados en una pestaña nueva del Form de la orden de compra. 2025.02.26
+                - Corrigiendo incidencia: No dejar crear mas SdP si ya se han creado. 2025.02.26
+                - Agregando funcionalidades de Reoportes en Compras
+                    Reportes de Compras:
+                        + Cantidad de producto por:  Almacén, costo, Categorías de Productos, Proyecto, Cuenta Analitica.
+                        + Conectar una hoja de cálculo a Base de Datos.
+                        + Solicitado, Recibido, Analitica, Vehiculo, Fase.: 2025.02.27
+
+
 
     """,
 
@@ -81,7 +98,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '2025.02.24 - 10:23',
+    'version': '2025.02.27 - 14:55',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',
@@ -121,7 +138,8 @@
         'report/purchase_order_report.xml',
         'views/view_account_move.xml',
         'views/views_res_partners.xml',
-        'views/views_purchase_order_line_tree.xml'
+        'views/views_purchase_order_line_tree.xml',
+        'report/reports_purchase.xml',
     ],
     # only loaded in demonstration mode
     'demo': [

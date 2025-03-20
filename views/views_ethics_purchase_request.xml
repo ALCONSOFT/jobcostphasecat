@@ -152,9 +152,15 @@
     <field name="arch" type="xml">
 
         <!-- Agregando campo state en la vista -->
-        <xpath expr="//sheet" position="inside">
-            <field name="state" invisible="1"/>
-        </xpath>
+            <xpath expr="//field[@name='state']" position="attributes">
+                <attribute name="statusbar_visible">draft,
+                        waiting_for_verifier,
+                        waiting_for_audit,
+                        waiting_for_buyer,
+                        waiting_for_approver,
+                        confirm,
+                        cancel</attribute>
+            </xpath>
 
         <!-- Reemplazamos la pestaña "Request Lines" -->
         <xpath expr="//notebook/page[@name='request_lines']" position="replace">
@@ -184,7 +190,7 @@
                         <field name="price_unit" optional="hide"/>
                         <field name="price_subtotal" optional="hide" widget="monetary"/>
                         <field name="account_analytic_id" optional="show"/>
-                        <field name="vehicle_id" optional="show"/>
+                        <field name="vehicle_id"/>
                         <field name="phase_id" optional="show"/>
                     </tree>
 
