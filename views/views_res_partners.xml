@@ -1,0 +1,40 @@
+<odoo>
+    <data>
+        <record id="view_partner_form_inherit" model="ir.ui.view">
+            <field name="name">res.partner.form.inherit</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_form"/>
+            <field name="arch" type="xml">
+                <notebook position="inside">
+                    <page string="Transferencias Internas">
+                        <group>
+                            <field name="internal_supplier"/>
+                            <field name="internal_transfer_warehouse_id"/>
+                        </group>
+                    </page>
+                </notebook>
+            </field>
+        </record>
+    </data>
+    <record id="view_purchase_order_form_inherit" model="ir.ui.view">
+        <field name="name">purchase.order.form.inherit</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            <notebook position="inside">
+                <page string="Transferencias Internas">
+                    <group>
+                        <field name="internal_transfer"/>
+                        <!--
+                        <button name="action_create_internal_transfer" type="object" string="Crear Transferencia Interna Sencilla" class="oe_highlight"/>
+                        -->
+                        <button name="action_create_double_internal_transfer"
+                            type="object"
+                            string="Crear Transferencia Interna Doble"
+                            class="oe_highlight"/>
+                    </group>
+                </page>
+            </notebook>
+        </field>
+    </record>
+</odoo>

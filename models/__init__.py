@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Part of BrowseInfo. See LICENSE file for full copyright and licensing details.
 # es importante tomar encuenta que el orden de los modelos debe comprender que los modelos a utiliar que son dependientes deben ir primero
+from . import models_res_partners
 from . import models_resconfigsettings
 from . import models_valores_defaults
 from . import models_ethics_purchase_request
@@ -15,3 +16,4 @@ from . import extended_analytic_line
 from . import account_move
 from . import models_mail_compose_message
 from . import models_ir_attachment
+from . import models_products

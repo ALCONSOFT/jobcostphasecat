@@ -91,6 +91,13 @@ class EthicsPurchaseRequest(models.Model):
         ], ondelete={'waiting_for_approver': 'cascade'})
     pr_lines = fields.One2many('purchase.request.line', 'pr_id', tracking=True)
 
+    approved_by_id = fields.Many2one(
+        'res.users',
+        string="Aprobado por",
+        readonly=True,
+        tracking=True  # Esto hace que se registre en el historial de cambios
+    )
+
     def action_last_7_days_requests(self):
         today = fields.Date.context_today(self)
         date_from = today - timedelta(days=6)
@@ -172,47 +179,71 @@ class EthicsPurchaseRequest(models.Model):
         self.warehouse_id = self.picking_type_id.warehouse_id
 
     def action_confirm_ethics(self):
-            if any(line.product_qty == 0 for line in self.pr_lines):
-                raise UserError(_("Can you please set product qty."))
-            if all(line.vendor_ids for line in self.pr_lines):
-                self.message_post(
-                    body=_('SdC: ' + self.name + ' fué APROBADA POR GERENCIA.')
-                )
-                self.create_rfq_ethics()
-            else:
-                view = self.env.ref('ethics_purchase_request.view_back_purchase_request_form')
-                wiz_lines = [(0, 0,
-                            {'product_id': line.product_id.id,
-                            'name': line.product_id.name,
-                            'account_analytic_id': line.account_analytic_id.id,
-                            'product_qty': line.product_qty,
-                            'product_uom': line.product_uom.id,
-                            'vehicle_id': line.vehicle_id,
-                            })
-                            for line in self.pr_lines.filtered(lambda l: not l.vendor_ids and l.product_qty >= 1)]
+        """
+        1️⃣ Antes de comenzar, agrega todos los vendors de las líneas de producto a las líneas de sección y notas.
+        2️⃣ Verifica que todas las líneas tengan una cantidad válida (> 0).
+        3️⃣ Si todas las líneas de productos tienen vendors, aprueba la SdC.
+        4️⃣ Si faltan vendors, abre un asistente para corregirlo.
+        """
+        # validar que no existan SdP con id de la purchase.request actual
+        # Validar que no existan SdPs con id de la purchase.request actual
+        existing_po = self.env['purchase.order'].search([('pr_ref_id', '=', self.id)])
+        if existing_po:
+            raise UserError(_("Ya existen Solicitudes de Pedido (SdP) generadas para esta Solicitud de Compra (SdC)."))
+        # 🔹 1️⃣ AGREGAR LOS PROVEEDORES A LAS SECCIONES Y NOTAS
+        for section_or_note in self.pr_lines.filtered(lambda l: l.display_type in ['line_section', 'line_note']):
+            # Obtener todos los vendors de las líneas de productos
+            all_vendors = self.pr_lines.filtered(lambda l: not l.display_type).mapped('vendor_ids')
 
-                return {'name': _('Create Back Purchase Request'),
-                        'type': 'ir.actions.act_window',
-                        'view_mode': 'form',
-                        'views': [(view.id, 'form')],
-                        'view_id': view.id,
-                        'res_model': 'back.purchase.request',
-                        'target': 'new',
-                        'context': {
-                            'default_pr_id': self.id,
-                            'default_employee_id': self.employee_id.id,
-                            'default_department_id': self.department_id.id,
-                            'default_request_responsible': self.request_responsible.id,
-                            'default_request_date': self.request_date,
-                            'default_company_id': self.company_id.id,
-                            'default_source_document': self.name,
-                            'default_vehicle_id': self.vehicle_id,
-                            'default_payment_term_id': self.payment_term_id,
-                            'default_warehouse_id': self.warehouse_id,
-                            'default_back_purchase_request_ids': wiz_lines,
-                            }
-                        }
+            # Asignar los vendors únicos a la línea de sección o nota
+            section_or_note.vendor_ids = [(6, 0, all_vendors.ids)]
 
+        # 🔹 2️⃣ VERIFICAR QUE TODAS LAS LÍNEAS TENGAN CANTIDAD > 0
+        if any(line.product_qty == 0 for line in self.pr_lines):
+            raise UserError(_("Can you please set product qty."))
+
+        # 🔹 3️⃣ VERIFICAR SI TODAS LAS LÍNEAS TIENEN PROVEEDOR
+        if all(line.vendor_ids for line in self.pr_lines if not line.display_type):
+            self.message_post(
+                body=_('SdC: ' + self.name + ' fue APROBADA POR GERENCIA. ' + self.env.user.name + ' la ha aprobado.')
+            )
+            self.create_rfq_ethics()
+
+        else:
+            # 🔹 4️⃣ ABRIR ASISTENTE PARA CORREGIR LÍNEAS SIN PROVEEDOR
+            view = self.env.ref('ethics_purchase_request.view_back_purchase_request_form')
+            wiz_lines = [(0, 0,
+                        {'product_id': line.product_id.id,
+                        'name': line.product_id.name,
+                        'account_analytic_id': line.account_analytic_id.id,
+                        'product_qty': line.product_qty,
+                        'product_uom': line.product_uom.id,
+                        'vehicle_id': line.vehicle_id,
+                        })
+                        for line in self.pr_lines.filtered(lambda l: not l.vendor_ids and l.product_qty >= 1)]
+
+            return {
+                'name': _('Create Back Purchase Request'),
+                'type': 'ir.actions.act_window',
+                'view_mode': 'form',
+                'views': [(view.id, 'form')],
+                'view_id': view.id,
+                'res_model': 'back.purchase.request',
+                'target': 'new',
+                'context': {
+                    'default_pr_id': self.id,
+                    'default_employee_id': self.employee_id.id,
+                    'default_department_id': self.department_id.id,
+                    'default_request_responsible': self.request_responsible.id,
+                    'default_request_date': self.request_date,
+                    'default_company_id': self.company_id.id,
+                    'default_source_document': self.name,
+                    'default_vehicle_id': self.vehicle_id,
+                    'default_payment_term_id': self.payment_term_id,
+                    'default_warehouse_id': self.warehouse_id,
+                    'default_back_purchase_request_ids': wiz_lines,
+                }
+            }
     def create_rfq_ethics(self):
         purchase_dict = {}
         purchase_orders = []
@@ -225,17 +256,20 @@ class EthicsPurchaseRequest(models.Model):
                     purchase_dict.update({vendor: []})
                 if purchase_dict:
                     print("=======IF=====purchase_dict====",purchase_dict)
-                    purchase_dict[vendor].append((0, 0, {'product_id': line.product_id.id,
-                                                         'name': line.product_id.name, 
-                                                         'product_qty': line.product_qty, 
-                                                         'product_uom': line.product_uom.id, 
-                                                         'price_unit': 0.0, 
-                                                         'display_type': False, 
-                                                         'vehicle_id': line.vehicle_id.id,
-                                                         'account_analytic_id': line.account_analytic_id.id,
-                                                         'analytic_distribution': {str(line.account_analytic_id.id): 100.0},
-                                                         'phase_id': line.phase_id.id,
-                                                         'date_planned': time.strftime('%Y-%m-%d')}))
+                    purchase_dict[vendor].append((0, 0, {
+                        'product_id': line.product_id.id,
+                        'name': line.name if line.display_type else line.product_id.name, 
+                        'product_qty': line.product_qty, 
+                        'product_uom': line.product_uom.id, 
+                        'price_unit': 0.0, 
+                        'display_type': line.display_type or False, 
+                        'vehicle_id': line.vehicle_id.id if line.vehicle_id else False,
+                        'account_analytic_id': line.account_analytic_id.id if line.account_analytic_id else False,
+                        'analytic_distribution': {str(line.account_analytic_id.id): 100.0} if line.account_analytic_id else {},
+                        'phase_id': line.phase_id.id if line.phase_id else False,
+                        'date_planned': fields.Date.today(),
+                        'sequence': line.sequence,
+                    }))
         for vendor,lines in purchase_dict.items():
             purchase_id = self.env['purchase.order'].create({
                 'partner_id': vendor.id,
@@ -343,7 +377,7 @@ class EthicsPuchasRequestLine(models.Model):
                                 string='Vehículo',
                                 index='btree_not_null',
                                 domain=[],
-                                default=lambda self: self._default_vehicle_id(), tracking=True)
+                                tracking=True)
 
     account_analytic_id = fields.Many2one('account.analytic.account',
                                             readonly=False,
@@ -359,6 +393,9 @@ class EthicsPuchasRequestLine(models.Model):
                                tracking=True,
                                domain="[('account_analytic_id', '=', account_analytic_id)]")
 
+    # 2025.02.17: Agregando funcionalidad de Secciones y Notas a la SdC
+    name = fields.Text(
+        string='Description', required=True, store=True, readonly=False)
 
     def _default_vehicle_id(self):
         user_id = self.env.user.id
@@ -387,6 +424,52 @@ class EthicsPuchasRequestLine(models.Model):
             print("No se encontró un registro con los criterios especificados.")
             valor_clave = 0
         return int(valor_clave)
+    
+    # 2025,02,14: Agregando funcionalidad de Secciones y Notas a la SdC
+    display_type = fields.Selection([
+        ('line_section', "Section"),
+        ('line_note', "Note")], default=False, help="Technical field for UX purpose.")
+
+    sequence = fields.Integer(string='Sequence', default=10)
+    price_unit = fields.Float('Price Unit', digits='Product Price', tracking=True)
+    price_subtotal = fields.Float('Subtotal', store=True, tracking=True)
+    state = fields.Selection(
+        related='pr_id.state',
+        string='Estado',
+        store=True,
+        readonly=True
+    )
+
+    _sql_constraints = [
+        ('accountable_required_fields',
+            "CHECK(display_type IS NOT NULL OR (name IS NOT NULL))",
+            "Missing required fields on accountable service order line."),
+        ('non_accountable_null_fields',
+            "CHECK(display_type IS NULL OR (name IS NOT NULL))",
+            "Forbidden values on non-accountable service order line"),
+    ]
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for values in vals_list:
+            display_type = values.get('display_type')
+            
+            if display_type in ['line_section', 'line_note']:
+                # ✅ Si es sección o nota, asegurarse de que tenga un nombre
+                if 'name' not in values or not values['name']:
+                    values['name'] = "New Section" if display_type == 'line_section' else "New Note"
+            # ❌ No sobrescribir `name` con False innecesariamente
+            return super().create(vals_list)
+
+    def write(self, values):
+        if 'display_type' in values and self.filtered(lambda line: line.display_type != values.get('display_type')):
+            raise UserError(_("You cannot change the type of a service order line. Instead you should delete the current line and create a new line of the proper type."))
+        return super().write(values)
+
+    @api.onchange('product_id')
+    def _onchange_product_id(self):
+        if self.product_id and not self.display_type:
+            self.name = self.product_id.get_product_multiline_description_sale()
 
 class BackEthicsPurchaseRequest(models.TransientModel):
     _inherit = 'back.purchase.request'
@@ -411,6 +494,7 @@ class PurchaseOrders(models.Model):
                                             ('waiting_for_approval','Esperando Aprobación'),
                                             ('to approve','Por Aprobar @ Compras'),
                                             ('descarted','Descartado'),
+                                            ('internal_transfer', 'Transferencia Interna')
         ], ondelete={'waiting_for_approval': 'cascade'})
     send_all_attachments = fields.Boolean(string='Enviar todos los adjuntos', default=False)
 
@@ -510,6 +594,8 @@ class PurchaseOrders(models.Model):
     # Botones en waiting_for_price_approval
     def action_waiting_for_price_approval(self):
         for reg in self.order_line:
+            if reg.display_type:   # Ignorar líneas de título
+                continue
             if reg.price_total == 0:
                 raise ValidationError("El valor del precio unitario no puede ser 0.")
                 return
@@ -588,7 +674,6 @@ class PurchaseOrders(models.Model):
 class PurchaseOrderLine(models.Model):
     _inherit = 'purchase.order.line'
 
-    #vehicle_id = fields.Many2one('fleet.vehicle', string='Vehicle', index='btree_not_null')
     vehicle_id = fields.Many2one('fleet.vehicle.data', string='Vehículo', tracking=True)
     account_analytic_id = fields.Many2one('account.analytic.account', readonly=False, string='Cuenta Analítica')
     phase_id = fields.Many2one("project.phaseproject",

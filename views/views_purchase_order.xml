@@ -13,6 +13,9 @@
                     <field name="pr_ref_id" optional="show"/>
                     <field name="payment_term_id" optional="show"/>
                 </xpath>
+                <xpath expr="//field[@name='user_id']" position="attributes">
+                    <attribute name="string">Usuario</attribute>
+                </xpath>
                 <!-- Agregando colores a los estados agregados
                                         <field name="state" optional="show" widget="badge" decoration-success="state == 'purchase' or state == 'done'" decoration-warning="state == 'to approve'" decoration-info="state == 'draft' or state == 'sent'"/>-->
                 <xpath expr="//field[@name='state']" position="replace">
@@ -49,6 +52,17 @@
             <field name="model">purchase.order</field>
             <field name="inherit_id" ref="purchase.purchase_order_form"/>
             <field name="arch" type="xml">
+                <xpath expr="//field[@name='currency_id']" position="after">
+                    <field name="invoice_status"/>
+                </xpath>
+                <!-- Insertamos el botón dentro del árbol de las líneas: 2025.02.26 -->
+                <xpath expr="//field[@name='order_line']/tree" position="inside">
+                    <button name="action_view_line_history"
+                            type="object"
+                            icon="fa-history"
+                            string="Historial" />
+                </xpath>
+
                 <!-- Insertar campos después del campo 'effective_date' -->
                 <xpath expr="//field[@name='effective_date']" position="after">
                     <field name="account_analytic_id"/>
@@ -64,7 +78,7 @@
                     <field name="product_qty" string="Qty" class="text-right"
                         options="{'no_create': True}"
                         widget="float"
-                        attrs="{'readonly': [('state', '!=', 'draft')]}"
+                        attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"
                         decoration-danger="hide == True" />
                 </xpath>
                 <xpath expr="//field[@name='price_tax']" position="after">
@@ -89,6 +103,92 @@
                 </xpath>
                 <xpath expr="//field[@name='product_uom']" position="attributes">
                     <attribute name="decoration-danger">hide == True</attribute>
+                </xpath>
+
+                <!--Agregando historia de productos: 2025.02.26-->
+                <xpath expr="//notebook" position="inside">
+                    <page string="Historial de Compras">
+                        <field name="purchase_history_ids" readonly="1">
+                            <tree>
+                                <field name="order_id" invisible="1"/>
+                                <field name="product_id"/>
+                                <field name="product_qty"/>
+                                <field name="price_unit"/>
+                                <field name="date_planned"/>
+                                <field name="partner_id" string="Proveedor" />
+                                <!-- Agrega más campos que quieras ver, por ejemplo el estado de la orden -->
+                                <field name="state" />
+                            </tree>
+                            <form>
+                                <sheet>
+                                    <group>
+                                        <field name="product_id"/>
+                                        <field name="product_qty"/>
+                                        <field name="price_unit"/>
+                                        <field name="date_planned"/>
+                                    </group>
+                                </sheet>
+                            </form>
+                        </field>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+        <!-- views/purchase_order_line_history.xml -->
+        <record id="view_purchase_order_line_form_inherit_history" model="ir.ui.view">
+            <field name="name">purchase.order.line.form.inherit.history</field>
+            <field name="model">purchase.order.line</field>
+            <field name="inherit_id" ref="purchase.purchase_order_line_form2"/> 
+            <!-- Ajusta el ref al XML que define el formulario de la línea -->
+            <field name="arch" type="xml">
+                <!-- Donde quieras insertarlo; por ejemplo dentro de <sheet> -->
+                <xpath expr="//sheet" position="inside">
+                    <notebook>
+                        <page string="Historial de esta línea">
+                            <field name="line_history_ids" readonly="1">
+                                <tree>
+                                    <field name="order_id"/>
+                                    <field name="product_id"/>
+                                    <field name="product_qty"/>
+                                    <field name="price_unit"/>
+                                    <field name="date_planned"/>
+                                    <field name="state"/>
+                                </tree>
+                                <form>
+                                    <sheet>
+                                        <group>
+                                            <field name="order_id"/>
+                                            <field name="product_id"/>
+                                            <field name="product_qty"/>
+                                            <field name="price_unit"/>
+                                            <field name="date_planned"/>
+                                            <field name="state"/>
+                                        </group>
+                                    </sheet>
+                                </form>
+                            </field>
+                        </page>
+                    </notebook>
+                </xpath>
+            </field>
+        </record>
+        <!-- Heredar la vista con ID externo 'purchase.purchase_history_tree': 2025.02.26 -->
+        <record id="purchase_purchase_history_tree_inherit" model="ir.ui.view">
+            <field name="name">purchase.history.tree.inherit</field>
+            <field name="model">purchase.order.line</field>
+            <!-- Reemplaza con el ID exacto de la vista que quieres heredar -->
+            <field name="inherit_id" ref="purchase.purchase_history_tree"/>
+            <field name="arch" type="xml">
+                <!-- Insertar campos dentro del tree existente -->
+                <xpath expr="//tree" position="inside">
+                    <!-- Fecha de la OC (si el modelo base es purchase.order.line y la fecha vive en order_id) -->
+                    <field name="date_order" string="Fecha OC"/>
+
+                    <!-- Estado de la Orden (purchase, done, cancel, etc.) -->
+                    <field name="state" string="Estatus"/>
+
+                    <!-- Campo pr_ref_ids (ajusta el string si deseas) -->
+                    <field name="pr_ref_ids" string="PR Ref IDs" widget="Many2one"/>
                 </xpath>
             </field>
         </record>

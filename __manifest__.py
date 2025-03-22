@@ -53,6 +53,42 @@
                     - Corrigiendo incidencia donde los correos no se marcaban como enviados. 2025.02.11:
                     - Corrigiendo incidencia de privielgios.  Se creo Privilegio de Usuario Interno para adjuntos. 2025.02.12:
                 -----------------------------------------------------------------------------------------
+                - Agregando funcionalidad: Agregar botón que permita crear una SdP en Transferencia Interna y
+                    enlace la SdP con la transferencia interna del inventario. 2025.02.13:
+                - Corrigiendo incidencia: El vehiculo no pasa de O.C. a la factura. 2025.02.14:
+                - Corrigiendo incidencia: Cambio de termino: Vendedor por Usuario en vista: Lista de SdP. 2025.02.14:
+                - Agregando funcionalidad: Permitir que la cantidad del producto pedido se pueda modificar en la SdP
+                    en los estados: draft, sent y waiting_for_price_revision. 2025.02.18
+                - Corrigiendo incidencia: Solo Compras puede realizar cambios en la cantidad en la SdP. 2025.02.19
+                - Corrigiendo incidencia: Implementar secciones y notas a la SdC: 2025.02.18
+                - Corrigiendo incidencia: cambiando la logica de las entregas de Proveedores INternos
+                    - cambaindo la ubicaion origen
+                    - creando dos transferencias: 1 salida del almacen origen y 1 entrada al almacen destino: 2025.02.24
+                - Corrigiendo incidencia: Agregando funcionalidades: Agregar al “lineas de pedidos de compra”:
+                     - la cuenta analitica,
+                     - analitico,
+                     - fase,
+                     - vehiculo.
+                     - Enlace a la SdP. 
+                -----------------------------------------------------------------------------------------                
+                - Agregar funcionanalidad: Habilitar bitácora del modelo: product_template
+                - Elimnar funcionalidad: memorizar los vehhiculos en la SdC. 2025.02.25
+                - NO DISPONIBLE: Agregando funcionalidad: Agregar montos exentos de impuestos y no exentos en al Orden de Compra. 2025.02.25
+                - Inhabilitar opcion de: action_views_details en stock.move. 2025.02.26
+                - Agregando funcionalidad: recalcular estatus de la factura en las SdP. 2025.02.26
+                - Agregando funcionalidad: Agregar filtro de cantidades recibidas != de cantidades pedidas en la SdP. 2025.02.26
+                - Agregando funcionalidas:
+                    Historial de cantidades pedidas, precios de Productos a nivel de SdC, Órdenes de Compras.
+                    Para ser agregados en una pestaña nueva del Form de la orden de compra. 2025.02.26
+                - Corrigiendo incidencia: No dejar crear mas SdP si ya se han creado. 2025.02.26
+                - Agregando funcionalidades de Reoportes en Compras
+                    Reportes de Compras:
+                        + Cantidad de producto por:  Almacén, costo, Categorías de Productos, Proyecto, Cuenta Analitica.
+                        + Conectar una hoja de cálculo a Base de Datos.
+                        + Solicitado, Recibido, Analitica, Vehiculo, Fase.: 2025.02.27
+
+
+
     """,
 
     'author': "Alconsoft",
@@ -62,7 +98,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '2025.02.12-13:43',
+    'version': '2025.02.27 - 14:55',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',
@@ -101,6 +137,9 @@
         'views/views_stock_warehouse.xml',
         'report/purchase_order_report.xml',
         'views/view_account_move.xml',
+        'views/views_res_partners.xml',
+        'views/views_purchase_order_line_tree.xml',
+        'report/reports_purchase.xml',
     ],
     # only loaded in demonstration mode
     'demo': [

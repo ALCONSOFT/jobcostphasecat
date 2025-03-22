@@ -115,7 +115,9 @@ class PurchaseOrder(models.Model):
                         pending_section = None
                     line_vals = line._prepare_account_move_line()
                     #line_vals.update({'sequence': sequence}) 2025.01.27    Se agrega la fase a la factura
-                    line_vals.update({'sequence': sequence, 'phase_id': line.phase_id.id})
+                    line_vals.update({'sequence': sequence,
+                        'phase_id': line.phase_id.id,
+                        'vehicle_id': line.vehicle_id.id})
                     invoice_vals['invoice_line_ids'].append((0, 0, line_vals))
                     sequence += 1
             invoice_vals_list.append(invoice_vals)
@@ -188,7 +190,189 @@ class PurchaseOrder(models.Model):
                     subtype_id=self.env.ref('mail.mt_note').id)
         return True
     #######################################################################################################################
+    # Crear transferencia Interna desde purchase en jobcostphasecat:
+    #   Se crea la accion de crear transferncia Itnerna desde la SdP
+ 
+    internal_transfer = fields.Boolean(string='Transferencia Interna', default=False)
 
+    @api.onchange('internal_transfer')
+    def _onchange_internal_transfer(self):
+        if self.internal_transfer:
+            self.state = 'internal_transfer'
+    
+    def action_create_internal_transfer(self):
+        if self.internal_transfer != True:
+            raise UserError(_('La SdP debe estar marcada "Transferencia Interna" para crear una transferencia interna.'))
+            
+        StockPicking = self.env['stock.picking']
+        for order in self:
+            if any(product.type in ['product', 'consu'] for product in order.order_line.product_id):
+                if not order.partner_id.internal_supplier:
+                    raise UserError(_('The supplier must be marked as an internal supplier to create an internal transfer.'))
+                order = order.with_company(order.company_id)
+                picking_type = self.env.ref('stock.picking_type_internal')
+                picking_vals = {
+                    'picking_type_id': picking_type.id,
+                    #'location_id': order.partner_id.property_stock_supplier.id,
+                    'location_id': order.partner_id.internal_transfer_warehouse_id.lot_stock_id.id,
+                    'location_dest_id': order.picking_type_id.default_location_dest_id.id,
+                    'origin': order.name,
+                    'company_id': order.company_id.id,
+                    'move_type': 'direct',
+                }
+                picking = StockPicking.create(picking_vals)
+                moves = order.order_line.filtered(lambda line: not line.hide)._create_stock_moves(picking)
+                moves._action_confirm()
+                picking.action_assign()
+                picking.message_post_with_view('mail.message_origin_link',
+                    values={'self': picking, 'origin': order},
+                    subtype_id=self.env.ref('mail.mt_note').id)
+        self.state = 'internal_transfer'
+        return True
+    #######################################################################################################################
+    def action_create_double_internal_transfer(self):
+        if not self.internal_transfer:
+            raise UserError(_('La SdP debe estar marcada "Transferencia Interna" para crear una transferencia interna.'))
+
+        StockPicking = self.env['stock.picking']
+        StockLocation = self.env['stock.location']
+        StockMove = self.env['stock.move']
+        customers_location = StockLocation.search([('usage', '=', 'customer')], limit=1)
+
+        if not customers_location:
+            raise UserError(_('No se encontró una ubicación de cliente (Customers).'))
+
+        for order in self:
+            if any(product.type in ['product', 'consu'] for product in order.order_line.product_id):
+                if not order.partner_id.internal_supplier:
+                    raise UserError(_('El proveedor debe estar marcado como proveedor interno para crear una transferencia interna.'))
+                
+                order = order.with_company(order.company_id)
+                picking_type_out = order.partner_id.internal_transfer_warehouse_id.out_type_id  # Salida
+                picking_type_in =  order.picking_type_id                                         # Entrada
+                
+                # Transferencia de salida (del almacén origen a Customers)
+                picking_vals_out = {
+                    'picking_type_id': picking_type_out.id,
+                    'location_id': order.partner_id.internal_transfer_warehouse_id.lot_stock_id.id,
+                    'location_dest_id': customers_location.id,
+                    'origin': order.name,
+                    'company_id': order.company_id.id,
+                    'move_type': 'direct',
+                    'partner_id': order.partner_id.id,
+                }
+                picking_out = StockPicking.create(picking_vals_out)
+                moves_out = order.order_line.filtered(lambda line: not line.hide)._create_stock_moves(picking_out)
+                for move in moves_out:
+                    move.location_id = picking_out.location_id
+                    move.location_dest_id = picking_out.location_dest_id
+                moves_out._action_confirm()
+                picking_out.action_assign()
+                
+                # Transferencia de entrada (de Customers al almacén destino)
+                picking_vals_in = {
+                    'picking_type_id': picking_type_in.id,
+                    'location_id': customers_location.id,
+                    'location_dest_id': order.picking_type_id.default_location_dest_id.id,
+                    'origin': order.name,
+                    'company_id': order.company_id.id,
+                    'move_type': 'direct',
+                    'partner_id': order.partner_id.id,
+                }
+                picking_in = StockPicking.create(picking_vals_in)
+                
+                # Crear movimientos de stock manualmente para la segunda transferencia
+                for move_out in moves_out:
+                    move_vals = {
+                        'name': move_out.name,
+                        'product_id': move_out.product_id.id,
+                        'product_uom_qty': move_out.product_uom_qty,
+                        'product_uom': move_out.product_uom.id,
+                        'picking_id': picking_in.id,
+                        'location_id': customers_location.id,
+                        'location_dest_id': order.picking_type_id.default_location_dest_id.id,
+                        'company_id': order.company_id.id,
+                    }
+                    new_move = StockMove.create(move_vals)
+                
+                picking_in.move_ids._action_confirm()
+                picking_in.action_assign()
+                
+                # Mensajes de seguimiento
+                picking_out.message_post_with_view('mail.message_origin_link',
+                    values={'self': picking_out, 'origin': order},
+                    subtype_id=self.env.ref('mail.mt_note').id)
+                
+                picking_in.message_post_with_view('mail.message_origin_link',
+                    values={'self': picking_in, 'origin': order},
+                    subtype_id=self.env.ref('mail.mt_note').id)
+        
+        self.state = 'internal_transfer'
+        # Agregar las transferencias al histórico de la orden de compra
+        order.picking_ids |= picking_out
+        order.picking_ids |= picking_in
+        return True
+    #######################################################################################################################
+    # recalcular los estados de las SdP para que se muestre el estado correcto en la vistas: camp invoice_status
+        # 2025.01.26
+    @api.depends('state', 'order_line.qty_to_invoice', 'order_line.hide', 'invoice_ids', 'write_date')
+    def _get_invoiced(self):
+        precision = self.env['decimal.precision'].precision_get('Product Unit of Measure')
+        for order in self:
+            if order.state not in ('purchase', 'done'):
+                order.invoice_status = 'no'
+                continue
+
+            # Filtrar solo líneas que no sean de visualización ni estén ocultas
+            valid_lines = order.order_line.filtered(lambda l: not l.display_type and not l.hide)
+            if any(
+                not float_is_zero(line.qty_to_invoice, precision_digits=precision)
+                for line in valid_lines
+            ):
+                order.invoice_status = 'to invoice'
+            elif valid_lines and all(
+                float_is_zero(line.qty_to_invoice, precision_digits=precision)
+                for line in valid_lines
+            ) and order.invoice_ids:
+                order.invoice_status = 'invoiced'
+            else:
+                order.invoice_status = 'no'
+    #######################################################################################################################
+    # Agregar campo de historial de compras a la orden de compra    
+    # 2025.02.26: Campo one2many para mostrar el historial
+    purchase_history_ids = fields.One2many(
+        comodel_name='purchase.order.line',
+        inverse_name='order_id',
+        string='Historial de Compras',
+        compute='_compute_purchase_history',
+        store=False
+    )
+    
+    @api.depends('order_line.product_id')  # o los campos que quieras detonar
+    def _compute_purchase_history(self):
+        for order in self:
+            # Aquí decides la lógica de filtrado que quieras aplicar:
+            # Por ejemplo, mostrar TODAS las líneas de orden de compra
+            # pasadas que tengan los mismos productos del pedido actual
+            # y/o mismo proveedor.
+            
+            # Si quieres filtrar por el partner (el proveedor actual):
+            partner_id = order.partner_id.id
+            
+            # Obtener todos los product_ids de este pedido
+            product_ids = order.order_line.mapped('product_id').ids
+            
+            # Buscar líneas de compra con esos productos y ese partner
+            # y que NO sean la orden de compra actual (por si no quieres duplicar).
+            lines = self.env['purchase.order.line'].search([
+                ('product_id', 'in', product_ids),
+                ('order_id.partner_id', '=', partner_id),
+                ('order_id', '!=', order.id),
+                # si quieres excluir borradores, recibidas, etc. 
+                # puedes añadir condiciones sobre ('order_id.state', '=', 'purchase'), etc.
+            ])
+            
+            order.purchase_history_ids = lines
 
 class PurchaseOrderLine(models.Model):
     _inherit = 'purchase.order.line'
@@ -234,6 +418,17 @@ class PurchaseOrderLine(models.Model):
                     'message': 'No está permitido cambiar la cantidad de este producto.',
                 }
             }
+        else:
+            # Solo los usuarios miembros del grupo de Compras pueden modificar la cantidad en la SdP
+            if not self.env.user.has_group('purchase.group_purchase_manager'):
+                return {
+                    'warning': {
+                        'title': 'No permitido',
+                        'message': 'Solo el grupo de Administradores en Compras puede modificar la cantidad en la SdP.',
+                }   
+            }
+            
+
     @api.onchange('hide')
     def _onchange_hide(self):
         if self.order_id:
@@ -243,3 +438,83 @@ class PurchaseOrderLine(models.Model):
     def _onchange_account_analytic_id(self):
         if self.analytic_distribution:
             self.analytic_distribution = {str(self.account_analytic_id.id): 100.0}
+
+    x_is_incomplete = fields.Boolean(
+        string="Diferencia Cantidades",
+        compute="_compute_is_incomplete",
+        store=True,  # Opcional si deseas que sea un campo almacenado
+    )
+
+    @api.depends('product_qty', 'qty_received')
+    def _compute_is_incomplete(self):
+        for line in self:
+            line.x_is_incomplete = (line.product_qty != line.qty_received)
+
+    # 2025.02.26: Agregar campo partner_id para historial de compras a la orden de compra
+    partner_id = fields.Many2one(
+        comodel_name='res.partner',
+        string='Proveedor (related)',
+        related='order_id.partner_id',
+        store=False,  # o True si deseas guardarlo
+        readonly=True
+    )
+    # 2025.02.26: Agregar campo order_id para historial de compras a la orden de compra
+    line_history_ids = fields.One2many(
+        comodel_name='purchase.order.line',
+        inverse_name='id',       # Sin inverse real; será un compute
+        string='Historial de esta línea',
+        compute='_compute_line_history_ids',
+        store=False,
+    )
+
+    @api.depends('product_id', 'order_id.partner_id')
+    def _compute_line_history_ids(self):
+        for line in self:
+            # Definir qué se considera “historial”.
+            # Por ejemplo, líneas de compra con el mismo product_id y partner
+            # en órdenes confirmadas o realizadas, excluyendo la línea actual.
+            domain = [
+                ('product_id', '=', line.product_id.id),
+                ('order_id.partner_id', '=', line.order_id.partner_id.id),
+                ('order_id.state', 'in', ['purchase','done']),  # si deseas sólo confirmadas o terminadas
+                ('id', '!=', line.id),  # excluir la línea actual
+            ]
+            line.line_history_ids = self.env['purchase.order.line'].search(domain)
+    # 2025.02.26: Agregar acción para ver historial de compras en la orden de compra por linea
+    def action_view_line_history(self):
+        """
+        Retorna una acción (ventana) que muestra las líneas de compra
+        que tengan el mismo producto y el mismo proveedor, 
+        excluyendo la línea actual.
+        """
+        self.ensure_one()  # aseguramos que haya exactamente una línea
+        domain = [
+            ('product_id', '=', self.product_id.id),
+            #('order_id.partner_id', '=', self.order_id.partner_id.id),
+            ('id', '!=', self.id),
+            # Opcional: si quieres sólo ver OCs en estado confirmado o hecho:
+            ('order_id.state', 'in', ['purchase', 'done', 'descarted']),
+        ]
+        return {
+            'name': 'Historial de Compras',
+            'type': 'ir.actions.act_window',
+            'res_model': 'purchase.order.line',
+            'view_mode': 'tree,form',
+            'domain': domain,
+            # target = 'current' abre la vista en la misma pestaña
+            # target = 'new' la abre como pop-up
+            'target': 'current',
+        }
+    # 2025.02.26: Agregar campo pr_ref_ids para historial de compras a la orden de compra
+    pr_ref_ids = fields.Many2one(
+        related='order_id.pr_ref_id',
+        string='PR References',
+        store=False,
+        readonly=True
+    )
+
+    @api.depends('order_id.order_line.pr_ref_ids')
+    def _compute_pr_ref_ids(self):
+        for line in self:
+            # si pr_ref_ids es un Many2many, por ejemplo:
+            line.pr_ref_ids = [(6, 0, [line.order_id.pr_ref_id.id])]
