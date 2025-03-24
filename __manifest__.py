@@ -86,7 +86,8 @@
                         + Cantidad de producto por:  Almacén, costo, Categorías de Productos, Proyecto, Cuenta Analitica.
                         + Conectar una hoja de cálculo a Base de Datos.
                         + Solicitado, Recibido, Analitica, Vehiculo, Fase.: 2025.02.27
-
+                -----------------------------------------------------------------------------------------
+                - Corrigiendo incidencia: el campo descriocion no deja avanzar al momento de especificar los proveedores en PR. 2025.03.24
 
 
     """,
@@ -98,7 +99,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '2025.02.27 - 14:55',
+    'version': '2025.03.24 - 14:35',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',

@@ -49,6 +49,7 @@
                 <field name="vehicle_id" domain="[]" optional="show"/>
                 <field name="phase_id" domain="[]" optional="show"/>
             </xpath>
+           
             <!-- Botón para generar el reporte QWeb -->
             <xpath expr="//header" position="inside">
                 <button name="%(jobcostphasecat.action_report_purchase_request)d" string="Imprimir Solicitud de Compra" type="action" class="btn-primary"/>
