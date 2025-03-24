@@ -394,8 +394,7 @@ class EthicsPuchasRequestLine(models.Model):
                                domain="[('account_analytic_id', '=', account_analytic_id)]")
 
     # 2025.02.17: Agregando funcionalidad de Secciones y Notas a la SdC
-    name = fields.Text(
-        string='Description', required=True, store=True, readonly=False)
+    name = fields.Text(string='Descripción', required=True, store=True, readonly=False, tracking=True, default="New Product")
 
     def _default_vehicle_id(self):
         user_id = self.env.user.id
@@ -470,6 +469,11 @@ class EthicsPuchasRequestLine(models.Model):
     def _onchange_product_id(self):
         if self.product_id and not self.display_type:
             self.name = self.product_id.get_product_multiline_description_sale()
+
+    @api.onchange('partner_id')
+    def _onchange_partner_id(self):
+        if self.partner_id:
+            self.name = f"{self.product_id.name} ({self.partner_id.name})" if self.product_id and self.partner_id else self.name
 
 class BackEthicsPurchaseRequest(models.TransientModel):
     _inherit = 'back.purchase.request'
