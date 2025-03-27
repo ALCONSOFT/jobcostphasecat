@@ -17,10 +17,14 @@
                         <t t-if="not line.hide">
                             <t t-set="current_subtotal" t-value="current_subtotal + line.price_subtotal" groups="account.group_show_line_subtotals_tax_excluded"/>
                             <t t-set="current_subtotal" t-value="current_subtotal + line.price_total" groups="account.group_show_line_subtotals_tax_included"/>
-                            <tr t-att-class="'bg-200 fw-bold o_line_section' if line.display_type == 'line_section' else 'fst-italic o_line_note' if line.display_type == 'line_note' else ''">
+                            <tr t-att-class="'bg-100 fw-bold o_line_section' if line.display_type == 'line_section' else 'fst-italic o_line_note' if line.display_type == 'line_note' else ''">
                                 <t t-if="not line.display_type">
                                     <td id="product">
                                         <span t-field="line.name"/>
+                                        <t t-if="line.account_analytic_id">
+                                            <span> / </span>
+                                            <span t-esc="line.account_analytic_id.name[:5]"/>
+                                        </t>
                                     </td>
                                     <td name="td_taxes">
                                         <span t-esc="', '.join(map(lambda x: x.description or x.name, line.taxes_id))"/>
