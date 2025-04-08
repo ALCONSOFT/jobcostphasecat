@@ -368,7 +368,41 @@ class EthicsPurchaseRequest(models.Model):
             body=_('SdC: ' + self.name + ' se envió a Compras')
         )
 
+    # Agregando campo de usuario actual para filtar los almacenes por usuario
+    # 2025.04.05
+    current_user_id = fields.Many2one('res.users', string='Usuario actual', compute='_compute_current_user', store=False)
 
+    @api.depends()
+    def _compute_current_user(self):
+        for record in self:
+            record.current_user_id = self.env.user
+    # Agregando campo de almacenes no permitidos para filtar los almacenes por usuario
+    # 2025.04.05
+    unauthorized_warehouses = fields.Many2many('stock.warehouse', string='Almacenes no permitidos', compute='_compute_unauthorized_warehouses', store=False)
+
+    @api.depends()
+    def _compute_current_user(self):
+        for record in self:
+            record.current_user_id = self.env.user
+
+    @api.depends()
+    def _compute_unauthorized_warehouses(self):
+        for record in self:
+            record.unauthorized_warehouses = self.env.user.warehouse_ids
+    
+    @api.depends('warehouse_id', 'current_user_id.warehouse_ids')
+    def _compute_mostrar_a_usuario(self):
+        for record in self:
+            if record.current_user_id and record.warehouse_id:
+                record.mostrar_a_usuario = record.warehouse_id not in record.current_user_id.warehouse_ids
+            else:
+                record.mostrar_a_usuario = False
+
+    mostrar_a_usuario = fields.Boolean(
+        string='Mostrar a usuario', 
+        compute='_compute_mostrar_a_usuario', 
+        store=False
+    )
 
 class EthicsPuchasRequestLine(models.Model):
     _inherit = 'purchase.request.line'
@@ -508,9 +542,7 @@ class PurchaseOrders(models.Model):
         for rec in self:
             # 2025.01.27: Cambiar estado a 'done' antes de enviar el correo
             rec.state = 'done'
-    # Boton Enviar P.O. por email Personalizado            
-    import logging
-    _logger = logging.getLogger(__name__)
+    ###############################################################################################
     def action_rfq_send(self):
         if self.send_all_attachments:
             '''
@@ -569,7 +601,7 @@ class PurchaseOrders(models.Model):
             else:
                 ctx['model_description'] = _('Purchase Order')
 
-            return {
+            xmail = {
                 'name': _('Compose Email for Purchase Order 02'),
                 'type': 'ir.actions.act_window',
                 'view_mode': 'form',
@@ -581,8 +613,9 @@ class PurchaseOrders(models.Model):
                 'attached_to_email': True,
                 'attachment_ids': attachment_ids,
             }
+            return xmail
         else:
-            return super(PurchaseOrders, self).action_rfq_send()
+            return super(PurchaseOrders, self).action_rfq_send()        
     # Botones en waiting_for_price_revision
     def action_waiting_for_price_revision(self):
         for rec in self:
