@@ -7,6 +7,7 @@
         <field name="model">purchase.request</field>
         <field name="inherit_id" ref="ethics_purchase_request.view_purchase_request"/>
         <field name="arch" type="xml">
+        
             <xpath expr="//tree" position="inside">
                 <!-- Añade aquí campos adicionales si es necesario, ejemplo: -->
                 <field name="vehicle_id" optional="show"/>
@@ -14,8 +15,12 @@
             </xpath>
             <xpath expr="//field[@name='priority']" position="after">
                 <field name="sequence_alter"/>
+                <!--2025.04.05-->
+                <field name="current_user_id" optional="hide"/>
+                <field name="unauthorized_warehouses" optional="hide"/>
             </xpath>
-            <xpath expr="//field[@name='state']" position="replace">
+
+           <xpath expr="//field[@name='state']" position="replace">
                 <field name="state"
                     string="Estatus"
                     widget="badge"
@@ -31,8 +36,50 @@
                 <field name="employee_id"
                     widget="many2one_avatar_user" />
             </xpath>
+
+
         </field>
     </record>
+    <!-- NUeva vista arbol de Solicitud ede compras  domain="[('warehouse_id', 'not in', current_user_id.warehouse_ids.ids)]"-->
+    <record id="view_purchase_request_tree_main" model="ir.ui.view">
+        <field name="name">purchase.request.tree</field>
+        <field name="model">purchase.request</field>
+        <field name="arch" type="xml">
+            <tree string="Solicitud de Compra">
+                <field name="name"/>
+                <field name="employee_id" widget="many2one_avatar_user"/>
+                <field name="department_id"/>
+                <field name="request_responsible"/>
+                <field name="request_date"/>
+                <field name="company_id"/>
+                <field name="source_document"/>
+                <field name="purchase_ids" widget="many2many_tags"/>
+                <field name="state" widget="badge"
+                    decoration-info="state in ['draft']"
+                    decoration-success="state in ['confirm']"
+                    decoration-warning="state in ['waiting_for_verifier', 'waiting_for_audit']"
+                    decoration-danger="state in ['waiting_for_buyer', 'waiting_for_approver']"
+                    decoration-muted="state in ['cancel']"/>
+                <field name="priority"/>
+                <field name="warehouse_id"/>
+                <field name="unauthorized_warehouses" optional="hide" widget="many2many_tags" modifiers="{&quot;readonly&quot;: true}"/>
+                <field name="mostrar_a_usuario" optional="hide" modifiers="{&quot;readonly&quot;: true}"/>
+            </tree>
+        </field>
+    </record>
+    <record id="action_purchase_request_tree_main" model="ir.actions.act_window">
+        <field name="name">Solicitudes de Compra</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">purchase.request</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('mostrar_a_usuario', '=', True)]</field>
+        <field name="view_id" ref="view_purchase_request_tree_main"/>
+    </record>
+    <menuitem id="menu_purchase_request_main"
+        name="Solicitudes de Compra"
+        parent="purchase.menu_purchase_root"
+        action="action_purchase_request_tree_main"
+        sequence="20"/>
 <!--
 -->
     <record id="view_purchase_request_form_inherit_jobcostphasecat" model="ir.ui.view">

@@ -81,18 +81,15 @@
                     Historial de cantidades pedidas, precios de Productos a nivel de SdC, Órdenes de Compras.
                     Para ser agregados en una pestaña nueva del Form de la orden de compra. 2025.02.26
                 - Corrigiendo incidencia: No dejar crear mas SdP si ya se han creado. 2025.02.26
-                - Agregando funcionalidades de Reoportes en Compras
-                    Reportes de Compras:
-                        + Cantidad de producto por:  Almacén, costo, Categorías de Productos, Proyecto, Cuenta Analitica.
-                        + Conectar una hoja de cálculo a Base de Datos.
-                        + Solicitado, Recibido, Analitica, Vehiculo, Fase.: 2025.02.27
                 -----------------------------------------------------------------------------------------
                 - Corrigiendo incidencia: el campo descriocion no deja avanzar al momento de especificar los proveedores en PR. 2025.03.26
                 - Corrigiendo incidencia: Agregar a la O.C. la cuenta Analitica - Analitico. 2025.03.27
                 -----------------------------------------------------------------------------------------
+                - Agregando funcionalidad: Agregar un campo user para filtar los almacenes por usuario. 2025.04.05
+                - Agregando funcionalidad: Agregar un plantilla con enlace de la SdP o SdP. 2025.04.07
+                - Agregando funcionalidad: Agregar un direcciones de correos de los destinarios en el correo. 2025.04.08
+                -------------------------------------------------------------------------------------------
                 
-
-
     """,
 
     'author': "Alconsoft",
@@ -102,7 +99,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '2025.03.27 - 14:55',
+    'version': '2025.04.08 - 16:54',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',
@@ -112,7 +109,8 @@
                 'purchase_discount',
                 'purchase_order_supplierinfo_update',    # Modulo que actualiza la información del precio del proveedor en la orden de compra
                 'purchase_order_general_discount',       # Modulo que agrega descuento general a la orden de compra
-                'account_fleet',                    # Modulo que agrega vehiculos a la factura
+                'account_fleet',                         # Modulo que agrega vehiculos a la factura
+                'email_template_qweb',                   # Modulo que permite ediar vistas de qweb para correos en templates
                 ],
 
     # always loaded: Aqui se cargan los formularios de vista.
@@ -144,6 +142,8 @@
         'views/views_res_partners.xml',
         'views/views_purchase_order_line_tree.xml',
         'report/reports_purchase.xml',
+        'security/purchase_request_rules.xml',
+        'data/email_templates_jc.xml'
     ],
     # only loaded in demonstration mode
     'demo': [
