@@ -445,6 +445,11 @@ class EthicsPuchasRequestLine(models.Model):
         return int(valor_clave)
     
     def _default_aaid(self):
+        # First check if there's a parent record with an analytic account
+        if self.pr_id and self.pr_id.account_analytic_id:
+            return self.pr_id.account_analytic_id.id
+        
+        # If no parent account, try to get the default from previous values
         user_id = self.env.user.id
         nombre_clave = 'account_analytic_id'
         modelo_usado = 'purchase.request'
@@ -453,10 +458,10 @@ class EthicsPuchasRequestLine(models.Model):
         valor_clave = self.env['valores.defaults'].buscar_y_devolver_valor_clave(user_id, nombre_clave, modelo_usado)
         if valor_clave:
             print("Valor de clave encontrado:", valor_clave)
-        else:
-            print("No se encontró un registro con los criterios especificados.")
-            valor_clave = 0
-        return int(valor_clave)
+            return int(valor_clave)
+        
+        # If no values found, return false
+        return False
     
     # 2025,02,14: Agregando funcionalidad de Secciones y Notas a la SdC
     display_type = fields.Selection([

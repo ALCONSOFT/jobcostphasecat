@@ -89,6 +89,7 @@
                 - Agregando funcionalidad: Agregar un plantilla con enlace de la SdP o SdP. 2025.04.07
                 - Agregando funcionalidad: Agregar un direcciones de correos de los destinarios en el correo. 2025.04.08
                 -------------------------------------------------------------------------------------------
+                - Corrigiendo incidencia: cuenta anlitica de linea de SdC por default copiarla del encabezado. 2025.04.14
                 
     """,
 
@@ -99,7 +100,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '2025.04.08 - 16:54',
+    'version': '2025.04.14 - 12:20',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',
