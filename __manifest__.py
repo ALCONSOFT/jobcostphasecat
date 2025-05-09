@@ -94,6 +94,8 @@
                     phase_id en SdC y Transferencias de Salidas. 2025.04.28,29
                 - Moviendo funcionalidad: de ac_sync_odoo_odoo al modulo de jobcostphasecat plantilla y 
                     opcion configurable> Permitir duplicar solo transferencia en estado plantilla. 2025.05.02
+=======
+                - Corrigiendo incidencia: cuenta anlitica de linea de SdC por default copiarla del encabezado. 2025.04.14
                 
     """,
 
