@@ -89,6 +89,12 @@
                 - Agregando funcionalidad: Agregar un plantilla con enlace de la SdP o SdP. 2025.04.07
                 - Agregando funcionalidad: Agregar un direcciones de correos de los destinarios en el correo. 2025.04.08
                 -------------------------------------------------------------------------------------------
+                - Corrigiendo incidencia: Tradiciendo el formulario F-COM-01: 2025.04.28
+                - Agregando funcionalidad: Agregar un campo de configuracion en compras para requerir
+                    phase_id en SdC y Transferencias de Salidas. 2025.04.28,29
+                - Moviendo funcionalidad: de ac_sync_odoo_odoo al modulo de jobcostphasecat plantilla y 
+                    opcion configurable> Permitir duplicar solo transferencia en estado plantilla. 2025.05.02
+=======
                 - Corrigiendo incidencia: cuenta anlitica de linea de SdC por default copiarla del encabezado. 2025.04.14
                 
     """,
@@ -100,7 +106,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '2025.04.14 - 12:20',
+    'version': '2025.05.02 - 21:50',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',
@@ -144,7 +150,8 @@
         'views/views_purchase_order_line_tree.xml',
         'report/reports_purchase.xml',
         'security/purchase_request_rules.xml',
-        'data/email_templates_jc.xml'
+        'data/email_templates_jc.xml',
+        'views/views_stock_product.xml',
     ],
     # only loaded in demonstration mode
     'demo': [

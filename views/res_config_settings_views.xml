@@ -1,25 +1,101 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="res_config_settings_view_form" model="ir.ui.view">
-        <field name="name">res.config.settings.view.form.inherit.jobcostphasecat</field>
-        <field name="model">res.config.settings</field>
-        <field name="inherit_id" ref="purchase.res_config_settings_view_form_purchase"/>
-        <field name="arch" type="xml">
-            <xpath expr="//div[@data-key='purchase']" position="inside">
-                <div class="row mt16 o_settings_container">
-                    <div class="col-12 col-lg-6 o_setting_box">
-                        <div class="o_setting_left_pane">
-                            <field name="allow_qty_change"/>
-                        </div>
-                        <div class="o_setting_right_pane">
-                            <label for="allow_qty_change"/>
-                            <div class="text-muted">
-                                Permitir modificar cantidades en las Solicitudes de Presupuesto
-                            </div>
-                        </div>
-                    </div>
+  <record id="res_config_settings_view_form_inherit_jobcostphasecat" model="ir.ui.view">
+    <field name="name">res.config.settings.view.form.inherit.jobcostphasecat</field>
+    <field name="model">res.config.settings</field>
+    <field name="inherit_id" ref="purchase.res_config_settings_view_form_purchase"/>
+    <field name="arch" type="xml">
+      <xpath expr="//div[@data-key='purchase']" position="inside">
+        <!-- Grupo de configuración Job Cost Phase Category -->
+        <div class="o_setting_group">
+          <h2>Job Cost Phase Category</h2>
+          <div class="row mt16 o_settings_container">
+            <!-- Permitir cambio de cantidades -->
+            <div class="col-12 col-lg-6 o_setting_box">
+              <div class="o_setting_left_pane">
+                <field name="allow_qty_change"/>
+              </div>
+              <div class="o_setting_right_pane">
+                <label for="allow_qty_change"/>
+                <div class="text-muted">
+                  Permitir modificar cantidades en las Solicitudes de Presupuesto
                 </div>
-            </xpath>
-        </field>
-    </record>
+              </div>
+            </div>
+            <!-- Requerir fase en Solicitudes de Presupuesto -->
+            <div class="col-12 col-lg-6 o_setting_box">
+              <div class="o_setting_left_pane">
+                <field name="require_phase_id"/>
+              </div>
+              <div class="o_setting_right_pane">
+                <label for="require_phase_id"/>
+                <div class="text-muted">
+                  Requerir fase en las Solicitudes de Presupuesto
+                </div>
+              </div>
+            </div>
+            <!-- Requerir fase en Transferencias de Salida -->
+            <div class="col-12 col-lg-6 o_setting_box">
+              <div class="o_setting_left_pane">
+                <field name="require_phase_id_out_transfer"/>
+              </div>
+              <div class="o_setting_right_pane">
+                <label for="require_phase_id_out_transfer"/>
+                <div class="text-muted">
+                  Requerir fase en las Transferencias de Salida
+                </div>
+              </div>
+            </div>
+            <!-- Permitir duplicar transferencias solo en plantilla -->
+            <div class="col-12 col-lg-6 o_setting_box">
+              <div class="o_setting_left_pane">
+                <field name="allow_transfer_duplication"/>
+              </div>
+              <div class="o_setting_right_pane">
+                <label for="allow_transfer_duplication"/>
+                <div class="text-muted">
+                  Permitir duplicar transferencias solo en estado “Plantilla”
+                </div>
+                <div class="executive-summary">
+                <ul>
+                    <li>
+                    <strong>Objetivo principal:</strong><br/>
+                    Controlar y personalizar la duplicación de transferencias de inventario (pickings) de tipo “salida”.
+                    </li>
+                    <li>
+                    <strong>Configuración dinámica:</strong><br/>
+                    Basada en el parámetro <code>purchase.allow_transfer_duplication</code>:
+                    <ul>
+                        <li>Si está desactivado, delega en la copia estándar de Odoo.</li>
+                        <li>Si está activado, impone reglas adicionales.</li>
+                    </ul>
+                    </li>
+                    <li>
+                    <strong>Alcance limitado:</strong><br/>
+                    Solo se aplica a transferencias de salida (<code>picking_type_id.code == 'outgoing'</code>).<br/>
+                    Recepciones y transferencias internas usan la lógica por defecto.
+                    </li>
+                    <li>
+                    <strong>Restricción de estado:</strong><br/>
+                    Con la opción activa, solo se permite duplicar si la transferencia está en estado “Plantilla”.<br/>
+                    Cualquier otro estado genera un error.
+                    </li>
+                    <li>
+                    <strong>Limpieza de datos en la copia:</strong><br/>
+                    Para duplicaciones válidas, se reinician campos clave (<code>export</code>, fechas, referencias de usuario, analítica, origen…) antes de llamar al método padre.
+                    </li>
+                    <li>
+                    <strong>Registro de auditoría:</strong><br/>
+                    Tras crear la copia, se elimina la cuenta analítica de las líneas y se añade una entrada en la bitácora para asegurar la trazabilidad.
+                    </li>
+                </ul>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </xpath>
+    </field>
+  </record>
 </odoo>
