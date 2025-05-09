@@ -246,14 +246,11 @@ class PurchaseOrder(models.Model):
             if any(product.type in ['product', 'consu'] for product in order.order_line.product_id):
                 if not order.partner_id.internal_supplier:
                     raise UserError(_('El proveedor debe estar marcado como proveedor interno para crear una transferencia interna.'))
-                
+
                 order = order.with_company(order.company_id)
-                picking_type_out = order.partner_id.internal_transfer_warehouse_id.out_type_id  # Salida
-                picking_type_in =  order.picking_type_id                                         # Entrada
-                
-                # Transferencia de salida (del almacén origen a Customers)
+                # --- Salida ---
                 picking_vals_out = {
-                    'picking_type_id': picking_type_out.id,
+                    'picking_type_id': order.partner_id.internal_transfer_warehouse_id.out_type_id.id,
                     'location_id': order.partner_id.internal_transfer_warehouse_id.lot_stock_id.id,
                     'location_dest_id': customers_location.id,
                     'origin': order.name,
@@ -262,16 +259,22 @@ class PurchaseOrder(models.Model):
                     'partner_id': order.partner_id.id,
                 }
                 picking_out = StockPicking.create(picking_vals_out)
-                moves_out = order.order_line.filtered(lambda line: not line.hide)._create_stock_moves(picking_out)
-                for move in moves_out:
-                    move.location_id = picking_out.location_id
-                    move.location_dest_id = picking_out.location_dest_id
+                moves_out = order.order_line.filtered(lambda l: not l.hide)._create_stock_moves(picking_out)
+
+                # — Asignar cuenta analítica y distribución a cada movimiento de salida —
+                for line in order.order_line.filtered(lambda l: not l.hide):
+                    moves_line = moves_out.filtered(lambda m: m.product_id == line.product_id)
+                    moves_line.write({
+                        'account_analytic_id': line.account_analytic_id.id,
+                        'analytic_distribution': line.analytic_distribution,
+                    })
+
                 moves_out._action_confirm()
                 picking_out.action_assign()
-                
-                # Transferencia de entrada (de Customers al almacén destino)
+
+                # — Transferencia de entrada (de Customers al almacén destino) —
                 picking_vals_in = {
-                    'picking_type_id': picking_type_in.id,
+                    'picking_type_id': order.picking_type_id.id,
                     'location_id': customers_location.id,
                     'location_dest_id': order.picking_type_id.default_location_dest_id.id,
                     'origin': order.name,
@@ -280,8 +283,8 @@ class PurchaseOrder(models.Model):
                     'partner_id': order.partner_id.id,
                 }
                 picking_in = StockPicking.create(picking_vals_in)
-                
-                # Crear movimientos de stock manualmente para la segunda transferencia
+
+                # Crear movimientos de stock manualmente y asignar analítica
                 for move_out in moves_out:
                     move_vals = {
                         'name': move_out.name,
@@ -289,28 +292,36 @@ class PurchaseOrder(models.Model):
                         'product_uom_qty': move_out.product_uom_qty,
                         'product_uom': move_out.product_uom.id,
                         'picking_id': picking_in.id,
-                        'location_id': customers_location.id,
-                        'location_dest_id': order.picking_type_id.default_location_dest_id.id,
+                        'location_id': move_out.location_id.id,
+                        'location_dest_id': move_out.location_dest_id.id,
                         'company_id': order.company_id.id,
                     }
                     new_move = StockMove.create(move_vals)
-                
+                    new_move.write({
+                        'account_analytic_id': line.account_analytic_id.id,
+                        'analytic_distribution': move_out.analytic_distribution,
+                    })
+
                 picking_in.move_ids._action_confirm()
                 picking_in.action_assign()
-                
+
                 # Mensajes de seguimiento
-                picking_out.message_post_with_view('mail.message_origin_link',
+                picking_out.message_post_with_view(
+                    'mail.message_origin_link',
                     values={'self': picking_out, 'origin': order},
                     subtype_id=self.env.ref('mail.mt_note').id)
-                
-                picking_in.message_post_with_view('mail.message_origin_link',
+                picking_in.message_post_with_view(
+                    'mail.message_origin_link',
                     values={'self': picking_in, 'origin': order},
                     subtype_id=self.env.ref('mail.mt_note').id)
-        
+
+        # Actualizar el estado de la orden
         self.state = 'internal_transfer'
-        # Agregar las transferencias al histórico de la orden de compra
-        order.picking_ids |= picking_out
-        order.picking_ids |= picking_in
+        # Añadir al histórico
+        for order in self:
+            order.picking_ids |= picking_out
+            order.picking_ids |= picking_in
+
         return True
     #######################################################################################################################
     # recalcular los estados de las SdP para que se muestre el estado correcto en la vistas: camp invoice_status

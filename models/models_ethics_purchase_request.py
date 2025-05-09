@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 from odoo import models, fields, api, _, tools
 from odoo.addons.mail.models.mail_template import MailTemplate
 import logging
@@ -508,6 +509,35 @@ class EthicsPuchasRequestLine(models.Model):
     def _onchange_partner_id(self):
         if self.partner_id:
             self.name = f"{self.product_id.name} ({self.partner_id.name})" if self.product_id and self.partner_id else self.name
+
+    # 2025.04.28: Agregando campo de Fase requerida
+    require_phase_id = fields.Boolean(
+        string="¿Obligar fase?",
+        compute="_compute_require_phase_id",
+        store=False,
+    )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        # Validar después de creación
+        if self.env['ir.config_parameter'].sudo()\
+               .get_param('jobcostphasecat.require_phase_id','False').lower() == 'true':
+            for rec in records:
+                if not rec.phase_id:
+                    raise UserError(_("Debe seleccionar la Fase antes de guardar."))
+        return records
+
+    def write(self, vals):
+        res = super().write(vals)
+        # Validar después de escritura
+        if self.env['ir.config_parameter'].sudo()\
+               .get_param('jobcostphasecat.require_phase_id','False').lower() == 'true':
+            for rec in self:
+                if not rec.phase_id:
+                    raise UserError(_("Debe seleccionar la Fase antes de guardar."))
+        return res
+    # 2025.04.28
 
 class BackEthicsPurchaseRequest(models.TransientModel):
     _inherit = 'back.purchase.request'
