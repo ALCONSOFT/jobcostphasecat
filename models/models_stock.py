@@ -192,7 +192,33 @@ class JC_StockMove(models.Model):
     def action_show_details(self):
         # Method disabled/not implemented
         raise UserError(_("This action is not available."))
+    # 2025.04.29
+    @api.model_create_multi
+    def create(self, vals_list):
+        moves = super().create(vals_list)
+        # Leer parámetro
+        require = self.env['ir.config_parameter'].sudo() \
+            .get_param('jobcostphasecat.require_phase_id_out_transfer', 'False') \
+            .lower() == 'true'
+        if require:
+            for move in moves:
+                if move.picking_id.picking_type_id.code == 'outgoing' and not move.phase_id:
+                    raise ValidationError(_("Debe seleccionar la Fase para los movimientos de salida."))
+        return moves
+
+    def write(self, vals):
+        res = super().write(vals)
+        # Leer parámetro
+        require = self.env['ir.config_parameter'].sudo() \
+            .get_param('jobcostphasecat.require_phase_id_out_transfer', 'False') \
+            .lower() == 'true'
+        if require:
+            for move in self:
+                if move.picking_id.picking_type_id.code == 'outgoing' and not move.phase_id:
+                    raise ValidationError(_("Debe seleccionar la Fase para los movimientos de salida."))
+        return res
     
+    # Alconor: 2025.04.29
 
 
 class JC_StockMoveLine(models.Model):

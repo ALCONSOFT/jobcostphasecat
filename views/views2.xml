@@ -87,6 +87,11 @@
                     <field name="vehicle_id" optional="show"/>
                     
                 </xpath>
+                <!--2025.05.02-->
+                <xpath expr="//header" position="inside">
+                    <button name="boton_convertir_a_plantilla" string="Convertir a Plantilla" type="object" class="btn-primary"
+                        />
+                </xpath>
             </field>
         </record>    
                 <!--        

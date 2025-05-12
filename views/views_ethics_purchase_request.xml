@@ -92,9 +92,13 @@
                 <field name="vehicle_id" optional="show"/>
                 <field name="account_analytic_id" optional="show"/>
             </field>
+            <!--2025.04.28-->
             <xpath expr="//field[@name='vendor_ids']" position="after">
                 <field name="vehicle_id" domain="[]" optional="show"/>
-                <field name="phase_id" domain="[]" optional="show"/>
+                <field name="phase_id"
+                    domain="[]"
+                    optional="show"
+                    attrs="{'required': [('require_phase_id','=',True)]}"/>
             </xpath>
            
             <!-- Botón para generar el reporte QWeb -->

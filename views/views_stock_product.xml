@@ -1,0 +1,17 @@
+<odoo>
+  <record id="view_product_template_form_large_image" model="ir.ui.view">
+    <field name="name">product.template.form.large.image</field>
+    <field name="model">product.template</field>
+    <field name="inherit_id" ref="product.product_template_form_view"/> 
+    <field name="arch" type="xml">
+      <!-- Reemplazamos el widget original  -->
+      <xpath expr="//field[@name='image_1920']" position="replace">
+        <field name="image_1920"
+               widget="image"
+               class="img-fluid"
+               options="{'preview_image': 'image_512'}"
+               style="max-width: 300px; max-height: 300px;"/>
+      </xpath>
+    </field>
+  </record>
+</odoo>

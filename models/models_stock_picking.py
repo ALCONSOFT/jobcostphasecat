@@ -83,16 +83,103 @@ class JC_StockPicking(models.Model):
         # Iniciar ciclo para cambiar lote linea por linea del Detalle
         modelo_detalle = self.env['stock.move'].search([('picking_id', '=', self.ids)])
         for record in modelo_detalle:
-            print(record.analytic_account_id) 
-            record.analytic_account_id = self.full_analytic_account_id
+            print(record.account_analytic_id) 
+            record.account_analytic_id = self.full_analytic_account_id
             print('Linea: ***************')
-            print(record.analytic_account_id)
+            print(record.account_analytic_id)
             record.analytic_distribution = {str(self.full_analytic_account_id.id): 100.0}
 
         #message = _('refrescando detalles  !!!')
         #raise UserError(message.lstrip())
+    ## Alconor: 2-may-2025: se movio del modulo: (ac_sync_odoo_odoo) a este modulo: jobcostphasecat
+    # 2023-10-31,1,2,3.....
+    @api.model
+    def boton_convertir_a_plantilla(self, vals):
+        from datetime import datetime
+        # Solo las transferencias en estado = borrador [draft] se pueden convertir a plantilla
+        registro_tranf = self.env['stock.picking'].browse(vals)
+        if registro_tranf.state != 'draft':
+            from odoo.exceptions import ValidationError, UserError
+            raise UserError(_('Sólo se permite convertir las transferecnias en estado borrador a Plantilla!.'))
+        else:
+            registro_tranf.write({'state': 'plantilla'})
+            self._escribir_bitacora_fin(self.env.user.name, False, datetime.now())
+        return True
+    # 2023-11-12: Fin
 
+    @api.returns('self', lambda value: value.id)
+    def copy(self, default=None):
+        from datetime import datetime
+        # Verificar si en configuracion de compras se permite duplicar transferencias en esytado solo plantillas
+        allow_transfer_duplication = self.env['ir.config_parameter'].sudo().get_param('jobcostphasecat.allow_transfer_duplication', default=False)
+        if not allow_transfer_duplication:
+            # Si el campo allow_transfer_duplication es falso, se coopia normalmente
+            pass
+        else:
+            # Si el campo allow_transfer_duplication es verdadero, se permite la duplicación de transferencias
+            # en estado plantilla
+            default = dict(default or {})
 
+            # 1) Detectar devolución: si se cambió el picking_type al tipo de devolución
+            return_type = self.picking_type_id.return_picking_type_id.id
+            new_type = default.get('picking_type_id')
+            is_return = new_type == return_type or default.get('move_type') == 'return'
+
+            if is_return:
+                # --- Lógica de devolución ---
+                # (aquí podrías aplicar reglas especiales para devoluciones)
+                return super().copy(default=default)
+
+            if self.picking_type_id.code == 'outgoing':
+                # Verifica si el estado no es 'plantilla'
+                if self.state != 'plantilla':
+                    from odoo.exceptions import ValidationError, UserError
+                    raise UserError(_('Sólo se permite duplicar transferencias de Salidas desde estado Plantilla!.'))
+                else:
+                    # Define los valores predeterminados para los campos al duplicar
+                    print("{ - - - - - - - Estoy en copy [Duplicando] - - - - - - - }")
+                    default = dict(default or {})
+                    default.update({
+                        'export': False,  # Reinicia el campo booleano 'export'
+                        'export_datetime': False,  # Reinicia el campo datetime 'export_datetime'
+                        'export_user_id': False,  # Reinicia el campo Many2one 'export_user_id'
+                        'export_url': False,  # Reinicia el campo Char o Text 'export_url'
+                        'close': False,  # Reinicia el campo booleano 'close'
+                        'close_datetime': False,  # Reinicia el campo datetime 'close_datetime'
+                        'full_analytic_account_id': False,
+                        'origin': False
+                    })
+                    # Llama al método copy original de la clase padre
+                    res = super(JC_StockPicking, self).copy(default=default)
+                    # Inicializa el campo analytic_account_id en todos los registros relacionados de stock.move
+                    for move in res.move_ids_without_package:
+                        move.account_analytic_id = False
+                    # Copia el valor de full_analytic_account_id en cada una de las líneas del modelo stock.move
+                    self.ver_detalles()
+                    # Activa la bitácora inicial porque el flujo de copiar un registro de transferencia es diferente
+                    valor_default = True
+                    self._escribir_bitacora_inicia(self.env.user.name, valor_default, datetime.now())
+            else:
+                # Si el tipo de picking no es 'outgoing', llama al método copy original de la clase padre
+                res = super(JC_StockPicking, self).copy(default=default)
+                # Inicializa el campo analytic_account_id en todos los registros relacionados de stock.move
+                for move in res.move_ids_without_package:
+                    move.account_analytic_id = False
+                # Copia el valor de full_analytic_account_id en cada una de las líneas del modelo stock.move
+                self.ver_detalles()
+                # Activa la bitácora inicial porque el flujo de copiar un registro de transferencia es diferente
+                valor_default = True
+                self._escribir_bitacora_inicia(self.env.user.name, valor_default, datetime.now())
+            return res
+
+            # Si el tipo de picking no es 'outgoing', llama al método copy original de la clase padre
+        return super(JC_StockPicking, self).copy(default=default)
+        # En este código, al duplicar el registro, los campos especificados se inicializan a un valor predeterminado
+        # (en la mayoría de los casos, simplemente se reinician). Asumí algunos tipos de datos para los campos en base a sus nombres,
+        # así que ajusta según sea necesario.
+        # PENDIENTE: campo suma de verificación: esto es para saber si la fila o el registro del encabezado de
+        # la transferencia ha cambiado y por lo tanto se debe actualizar
+        ############################################################################################################
 
 class JC_closed_date_transference(models.Model):
     _name = 'stock.picking.closed'
