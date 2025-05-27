@@ -40,32 +40,103 @@ class PurchaseOrder(models.Model):
         for record in self:
             record.allow_qty_change = param.lower() == 'true'
 
+    # Global Discount Fields
+    global_discount_type = fields.Selection(
+        [('percentage', 'Percentage'), ('fixed', 'Fixed Amount')],
+        string='Global Discount Type',
+        default='percentage',
+        tracking=True,
+        states={'draft': [('readonly', False)], 'sent': [('readonly', False)], 'to approve': [('readonly', False)], 'purchase': [('readonly', True)], 'done': [('readonly', True)], 'cancel': [('readonly', True)]}
+    )
+    global_discount_percentage = fields.Float(
+        string='Global Discount (%)',
+        digits='Discount', # Standard Odoo precision for discounts
+        default=0.0,
+        tracking=True,
+        states={'draft': [('readonly', False)], 'sent': [('readonly', False)], 'to approve': [('readonly', False)], 'purchase': [('readonly', True)], 'done': [('readonly', True)], 'cancel': [('readonly', True)]}
+    )
+    global_discount_fixed_amount = fields.Monetary(
+        string='Global Discount Amount',
+        default=0.0,
+        tracking=True,
+        states={'draft': [('readonly', False)], 'sent': [('readonly', False)], 'to approve': [('readonly', False)], 'purchase': [('readonly', True)], 'done': [('readonly', True)], 'cancel': [('readonly', True)]}
+    )
+
+    _sql_constraints = [
+        ('global_discount_percentage_limit', 'CHECK(global_discount_percentage >= 0.0 AND global_discount_percentage <= 100.0)', 'Global discount percentage must be between 0 and 100%.'),
+        ('global_discount_fixed_amount_positive', 'CHECK(global_discount_fixed_amount >= 0.0)', 'Global discount fixed amount must be positive.'),
+    ]
+
     # Calculo de totales tomando en cuen.hideta los llas lineas ocultas hide
 
-    @api.depends('order_line.price_total', 'order_line.hide')
+    @api.depends('order_line.price_total', 'order_line.price_subtotal', 'order_line.hide', 'global_discount_type', 'global_discount_percentage', 'global_discount_fixed_amount')
     def _amount_all(self):
         for order in self:
-            order_lines = order.order_line.filtered(lambda x: not x.display_type)
-            order_lines = order_lines.filtered(lambda line: not line.hide)
-            if order.company_id.tax_calculation_rounding_method == 'round_globally':
-                tax_results = self.env['account.tax']._compute_taxes([
-                    line._convert_to_tax_base_line_dict()
-                    for line in order_lines
-                ])
-                totals = tax_results['totals']
-                amount_untaxed = totals.get(order.currency_id, {}).get('amount_untaxed', 0.0)
-                amount_tax = totals.get(order.currency_id, {}).get('amount_tax', 0.0)
-            else:
-                amount_untaxed = sum(order_lines.mapped('price_subtotal'))
-                amount_tax = sum(order_lines.mapped('price_tax'))
+            order_lines = order.order_line.filtered(lambda x: not x.display_type and not x.hide)
 
-            order.amount_untaxed = amount_untaxed
-            order.amount_tax = amount_tax
-            order.amount_total = order.amount_untaxed + order.amount_tax
-        print("Amount Untaxed:", amount_untaxed)
-        print("Amount Tax:", amount_tax)
-        print("Amount Total:", order.amount_total)
-        self._compute_tax_totals()
+            if not order_lines:
+                order.amount_untaxed = 0.0
+                order.amount_tax = 0.0
+                order.amount_total = 0.0
+            else:
+                # Calculate base for global discount (sum of line subtotals before global discount)
+                base_for_global_discount = sum(line.price_subtotal for line in order_lines)
+
+                effective_global_discount_rate = 0.0
+                if base_for_global_discount != 0: # Avoid division by zero
+                    if order.global_discount_type == 'percentage':
+                        effective_global_discount_rate = (order.global_discount_percentage or 0.0) / 100.0
+                    elif order.global_discount_type == 'fixed':
+                        # Calculate rate, ensure it's not more than 1 (100%)
+                        effective_global_discount_rate = min((order.global_discount_fixed_amount or 0.0) / base_for_global_discount, 1.0)
+                
+                # Clamp the rate between 0.0 and 1.0
+                effective_global_discount_rate = min(max(0.0, effective_global_discount_rate), 1.0)
+
+                new_tax_base_lines = []
+                for line in order_lines:
+                    line_dict = line._convert_to_tax_base_line_dict()
+                    # Apply this line's share of the global discount to its price_unit
+                    # line_dict['price_unit'] is price after line discount but before global discount
+                    line_dict['price_unit'] = line_dict['price_unit'] * (1 - effective_global_discount_rate)
+                    new_tax_base_lines.append(line_dict)
+
+                if not new_tax_base_lines: # Should not happen if order_lines was not empty, but as a safeguard
+                    order.amount_untaxed = 0.0
+                    order.amount_tax = 0.0
+                    order.amount_total = 0.0
+                else:
+                    tax_results = self.env['account.tax']._compute_taxes(new_tax_base_lines)
+                    totals = tax_results['totals']
+                    
+                    # The amount_untaxed from tax_results is now the sum of line subtotals *after* global discount
+                    amount_untaxed = totals.get(order.currency_id, {}).get('amount_untaxed', 0.0)
+                    amount_tax = totals.get(order.currency_id, {}).get('amount_tax', 0.0)
+
+                    order.amount_untaxed = amount_untaxed
+                    order.amount_tax = amount_tax
+                    order.amount_total = order.amount_untaxed + order.amount_tax
+            
+            # The print statements might be for debugging and can be kept or removed based on final requirements.
+            # For now, I'll assume they should reflect the final computed values.
+            print("Amount Untaxed:", order.amount_untaxed)
+            print("Amount Tax:", order.amount_tax)
+            print("Amount Total:", order.amount_total)
+            self._compute_tax_totals()
+
+    @api.constrains('global_discount_type', 'global_discount_fixed_amount', 'order_line', 'order_line.price_subtotal')
+    def _check_global_discount_fixed_amount(self):
+        for order in self:
+            if order.global_discount_type == 'fixed' and order.global_discount_fixed_amount:
+                # Calculate current total subtotal from lines (already net of line discounts)
+                # Ensure to use the same filtering as in _amount_all for consistency
+                order_lines = order.order_line.filtered(lambda x: not x.display_type and not x.hide)
+                current_subtotal = sum(line.price_subtotal for line in order_lines)
+                if order.global_discount_fixed_amount > current_subtotal:
+                    raise UserError(_('Global fixed discount amount (%(amount).2f) cannot exceed the total untaxed amount before global discount (%(subtotal).2f).') % {
+                        'amount': order.global_discount_fixed_amount,
+                        'subtotal': current_subtotal
+                    })
 
     @api.depends_context('lang')
     @api.depends('order_line.taxes_id', 'order_line.price_subtotal', 'amount_total', 'amount_untaxed')
@@ -399,6 +470,16 @@ class PurchaseOrderLine(models.Model):
                                string="Fase",
                                tracking=True,
                                domain="[('account_analytic_id', '=', account_analytic_id)]")
+    discount_type = fields.Selection([
+        ('percentage', 'Percentage'),
+        ('fixed', 'Fixed Amount')],
+        string='Discount Type',
+        default='percentage',
+        tracking=True)
+    discount_fixed_amount = fields.Monetary(
+        string='Discount Amount',
+        default=0.0,
+        tracking=True)
     
 
     _sql_constraints = [
@@ -406,18 +487,95 @@ class PurchaseOrderLine(models.Model):
             "discount_limit",
             "CHECK (discount <= 100.0)",
             "Discount must be lower than 100%.",
+        ),
+        (
+            "discount_fixed_amount_limit",
+            "CHECK (discount_fixed_amount >= 0.0)",
+            "Discount amount must be positive.",
         )
     ]
 
-    price_unit_discounted = fields.Monetary(
-        compute='_compute_price_unit_discounted', 
-        string='Initial Discounted Price'
-    )
+    # price_unit_discounted = fields.Monetary(
+    #     compute='_compute_price_unit_discounted', 
+    #     string='Initial Discounted Price'
+    # )
 
-    @api.depends('price_unit', 'discount')
-    def _compute_price_unit_discounted(self):
+    # @api.depends('price_unit', 'discount', 'discount_type', 'discount_fixed_amount')
+    # def _compute_price_unit_discounted(self):
+    #     for line in self:
+    #         if line.discount_type == 'percentage':
+    #             line.price_unit_discounted = line.price_unit * (1 - (line.discount or 0.0) / 100.0)
+    #         elif line.discount_type == 'fixed':
+    #             # Ensure discounted price doesn't go below zero
+    #             line.price_unit_discounted = max(0.0, line.price_unit - line.discount_fixed_amount)
+    #         else:
+    #             line.price_unit_discounted = line.price_unit
+
+    @api.depends('product_qty', 'price_unit', 'taxes_id', 'discount', 'discount_type', 'discount_fixed_amount')
+    def _compute_amount(self):
         for line in self:
-            line.price_unit_discounted = line.price_unit * (1 - (line.discount or 0.0) / 100.0)
+            price_reduce = 0.0
+            if line.discount_type == 'percentage':
+                price_reduce = line.price_unit * (1.0 - (line.discount or 0.0) / 100.0)
+            elif line.discount_type == 'fixed':
+                price_reduce = line.price_unit - line.discount_fixed_amount
+                if price_reduce < 0.0: # Ensure price_reduce doesn't go below zero
+                    price_reduce = 0.0
+            else: # Failsafe, though should not happen with a default value
+                price_reduce = line.price_unit
+
+            # Sanity check for fixed discount not exceeding total value before tax
+            if line.discount_type == 'fixed' and line.discount_fixed_amount > (line.price_unit * line.product_qty) and line.product_qty > 0 :
+                # This case should ideally be prevented by a constraint or onchange warning
+                # For now, we ensure price_subtotal is not negative.
+                # The price_reduce here is per unit, so the check should be against price_unit.
+                # However, the fixed discount is often conceptualized against the line total.
+                # Let's adjust price_reduce to be per unit for tax calculation.
+                # If discount_fixed_amount is meant for the whole line, then price_reduce logic needs care.
+                # Assuming discount_fixed_amount is per unit for now as per typical POL structure.
+                # If discount_fixed_amount is for the line total, then:
+                # price_reduce_total_line = (line.price_unit * line.product_qty) - line.discount_fixed_amount
+                # price_reduce_unit = price_reduce_total_line / line.product_qty if line.product_qty else 0
+                # For now, sticking to discount_fixed_amount as a per-unit discount based on typical field placement.
+                # Let's assume discount_fixed_amount is a discount per unit.
+                # price_reduce was already calculated as line.price_unit - line.discount_fixed_amount
+                # The check `if price_reduce < 0.0: price_reduce = 0.0` handles this at unit level.
+                pass # The negative check for price_reduce already handles this at unit level.
+
+
+            price_on_line = line.product_qty * price_reduce
+            
+            if line.taxes_id:
+                taxes = line.taxes_id.compute_all(
+                    price_reduce,
+                    line.order_id.currency_id,
+                    line.product_qty,
+                    product=line.product_id,
+                    partner=line.order_id.partner_id
+                )
+                line.update({
+                    'price_tax': sum(t.get('amount', 0.0) for t in taxes.get('taxes', [])),
+                    'price_total': taxes['total_included'],
+                    'price_subtotal': taxes['total_excluded'],
+                })
+            else:
+                line.update({
+                    'price_tax': 0.0,
+                    'price_total': price_on_line,
+                    'price_subtotal': price_on_line,
+                })
+
+    @api.constrains('discount_type', 'discount_fixed_amount', 'price_unit', 'product_qty')
+    def _check_discount_fixed_amount(self):
+        for line in self:
+            if line.discount_type == 'fixed' and line.product_qty > 0: # Avoid division by zero if product_qty is 0
+                # The discount_fixed_amount is per unit in this implementation
+                if line.discount_fixed_amount > line.price_unit:
+                    raise models.ValidationError(_('Fixed discount amount cannot exceed the unit price.'))
+            # If discount_fixed_amount was intended for the total line:
+            # if line.discount_type == 'fixed' and line.discount_fixed_amount > (line.price_unit * line.product_qty):
+            #     raise models.ValidationError(_('Fixed discount amount cannot exceed the total line amount (Price * Quantity).'))
+
 
     @api.onchange('product_qty')
     def _onchange_product_qty(self):

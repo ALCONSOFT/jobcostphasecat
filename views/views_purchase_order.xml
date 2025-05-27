@@ -71,6 +71,13 @@
                     <field name="send_all_attachments" />
                 </xpath>
                 <!-- Agregar campo computado para subtotal-->
+                <xpath expr="//field[@name='tax_totals']" position="before">
+                    <group name="global_discounts_group" string="Global Discount">
+                        <field name="global_discount_type" attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                        <field name="global_discount_percentage" attrs="{'invisible': [('global_discount_type', '!=', 'percentage')], 'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                        <field name="global_discount_fixed_amount" attrs="{'invisible': [('global_discount_type', '!=', 'fixed')], 'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                    </group>
+                </xpath>
                 <field name="tax_totals" position="before">
                         <field name="total_price_subtotal" readonly="1"/>
                 </field>
@@ -86,6 +93,18 @@
                     <field name="account_analytic_id" optional="show" decoration-danger="hide == True"/>
                     <field name="notes" optional="show" decoration-danger="hide == True"/>
                     <field name="allow_qty_change_line" optional="hide" />
+                    <!-- Line Discount Fields -->
+                    <field name="discount_type"
+                           attrs="{'readonly': [('parent.state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"
+                           optional="show"/>
+                    <field name="discount"
+                           string="Discount (%)"
+                           attrs="{'column_invisible': [('discount_type', '!=', 'percentage')], 'readonly': [('parent.state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"
+                           optional="show"/>
+                    <field name="discount_fixed_amount"
+                           string="Disc. Amount"
+                           attrs="{'column_invisible': [('discount_type', '!=', 'fixed')], 'readonly': [('parent.state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"
+                           optional="show"/>
                     <field name="hide" optional="show" class="text-primary" decoration-danger="hide == True"/>
                     <field name="phase_id" optional="show"/>
                 </xpath>
@@ -141,6 +160,11 @@
             <field name="inherit_id" ref="purchase.purchase_order_line_form2"/> 
             <!-- Ajusta el ref al XML que define el formulario de la línea -->
             <field name="arch" type="xml">
+                <xpath expr="//field[@name='price_unit']" position="after">
+                    <field name="discount_type" attrs="{'readonly': [('parent.state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                    <field name="discount" string="Discount (%)" attrs="{'invisible': [('discount_type', '!=', 'percentage')], 'readonly': [('parent.state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                    <field name="discount_fixed_amount" string="Discount Amount" attrs="{'invisible': [('discount_type', '!=', 'fixed')], 'readonly': [('parent.state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                </xpath>
                 <!-- Donde quieras insertarlo; por ejemplo dentro de <sheet> -->
                 <xpath expr="//sheet" position="inside">
                     <notebook>
@@ -214,10 +238,10 @@
             <field name="arch" type="xml">
             <!-- Protegemos el botón y el campo general_discount -->
             <xpath expr="//button[@name='action_update_general_discount']" position="attributes">
-                <attribute name="attrs">{'invisible': [('state', 'not in', ['draft', 'send', 'waiting_for_price_revision'])]}</attribute>
+                <attribute name="attrs">{'invisible': ['|', ('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision']), ('global_discount_type', '!=', False)]}</attribute>
             </xpath>
             <xpath expr="//field[@name='general_discount']" position="attributes">
-                <attribute name="attrs">{'readonly': [('state', 'not in', ['draft', 'send', 'waiting_for_price_revision'])]}</attribute>
+                <attribute name="attrs">{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])], 'invisible': [('global_discount_type', '!=', False)]}</attribute>
             </xpath>
             </field>
         </record>
