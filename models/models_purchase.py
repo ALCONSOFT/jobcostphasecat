@@ -495,21 +495,21 @@ class PurchaseOrderLine(models.Model):
         )
     ]
 
-    # price_unit_discounted = fields.Monetary(
-    #     compute='_compute_price_unit_discounted', 
-    #     string='Initial Discounted Price'
-    # )
+    price_unit_discounted = fields.Monetary(
+        compute='_compute_price_unit_discounted', 
+        string='Initial Discounted Price'
+    )
 
-    # @api.depends('price_unit', 'discount', 'discount_type', 'discount_fixed_amount')
-    # def _compute_price_unit_discounted(self):
-    #     for line in self:
-    #         if line.discount_type == 'percentage':
-    #             line.price_unit_discounted = line.price_unit * (1 - (line.discount or 0.0) / 100.0)
-    #         elif line.discount_type == 'fixed':
-    #             # Ensure discounted price doesn't go below zero
-    #             line.price_unit_discounted = max(0.0, line.price_unit - line.discount_fixed_amount)
-    #         else:
-    #             line.price_unit_discounted = line.price_unit
+    @api.depends('price_unit', 'discount', 'discount_type', 'discount_fixed_amount')
+    def _compute_price_unit_discounted(self):
+        for line in self:
+            if line.discount_type == 'percentage':
+                line.price_unit_discounted = line.price_unit * (1 - (line.discount or 0.0) / 100.0)
+            elif line.discount_type == 'fixed':
+                # Ensure discounted price doesn't go below zero
+                line.price_unit_discounted = max(0.0, line.price_unit - line.discount_fixed_amount)
+            else:
+                line.price_unit_discounted = line.price_unit
 
     @api.depends('product_qty', 'price_unit', 'taxes_id', 'discount', 'discount_type', 'discount_fixed_amount')
     def _compute_amount(self):
