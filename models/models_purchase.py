@@ -33,6 +33,11 @@ class PurchaseOrder(models.Model):
         compute='_compute_allow_qty_change',
         store=False
     )
+    subtotal_without_discount = fields.Monetary(
+        string='Subtotal sin descuento',
+        store=True,
+        tracking=True
+    )
 
     @api.depends('company_id')
     def _compute_allow_qty_change(self):
@@ -40,32 +45,188 @@ class PurchaseOrder(models.Model):
         for record in self:
             record.allow_qty_change = param.lower() == 'true'
 
+    # Global Discount Fields
+    global_discount_type = fields.Selection(
+        [
+            ('percentage', 'Porcentaje Global'),
+            ('fixed', 'Fijo Global'),
+            ('percentage_line', 'Porcentaje por Línea'),
+            ('fixed_line', 'Fijo por Línea')
+        ],
+        string='Tipo Descuento Global',
+        default='percentage',
+        tracking=True,
+        states={'draft': [('readonly', False)], 'sent': [('readonly', False)], 'to approve': [('readonly', False)], 'purchase': [('readonly', True)], 'done': [('readonly', True)], 'cancel': [('readonly', True)]}
+    )
+    global_discount_percentage = fields.Float(
+        string='Descuento Global (%)',
+        digits='Discount', # Standard Odoo precision for discounts
+        default=0.0,
+        tracking=True,
+        states={'draft': [('readonly', False)], 'sent': [('readonly', False)], 'to approve': [('readonly', False)], 'purchase': [('readonly', True)], 'done': [('readonly', True)], 'cancel': [('readonly', True)]}
+    )
+    global_discount_fixed_amount = fields.Monetary(
+        string='Descuento Global Fijo',
+        default=0.0,
+        tracking=True,
+        states={'draft': [('readonly', False)], 'sent': [('readonly', False)], 'to approve': [('readonly', False)], 'purchase': [('readonly', True)], 'done': [('readonly', True)], 'cancel': [('readonly', True)]}
+    )
+    total_discount = fields.Monetary(
+        string='Total Descuento',
+        compute='_compute_total_discount',
+        store=True,
+        tracking=True
+    )
+    
+
+    _sql_constraints = [
+        ('global_discount_percentage_limit', 'CHECK(global_discount_percentage >= 0.0 AND global_discount_percentage <= 100.0)', 'Global discount percentage must be between 0 and 100%.'),
+        ('global_discount_fixed_amount_positive', 'CHECK(global_discount_fixed_amount >= 0.0)', 'Global discount fixed amount must be positive.'),
+    ]
+
     # Calculo de totales tomando en cuen.hideta los llas lineas ocultas hide
 
-    @api.depends('order_line.price_total', 'order_line.hide')
+    @api.depends('order_line.price_total',
+        'order_line.price_subtotal',
+        'order_line.hide',
+        'global_discount_type',
+        'global_discount_percentage',
+        'global_discount_fixed_amount')
     def _amount_all(self):
+        # 2025.05.30: Se calcula el descuento global
+        self._compute_global_discount()
+        # 2025.06.06: Calcular Sub-Total sin descuento
+        self.subtotal_without_discount = self._compute_subtotal_without_discount()
+        # 2025.05.30: Se recalcula los totales de la orden de compra
+        self.total_discount = self._compute_total_discount()
+        # Se recalcula los totales de la orden de compra
         for order in self:
-            order_lines = order.order_line.filtered(lambda x: not x.display_type)
-            order_lines = order_lines.filtered(lambda line: not line.hide)
-            if order.company_id.tax_calculation_rounding_method == 'round_globally':
-                tax_results = self.env['account.tax']._compute_taxes([
-                    line._convert_to_tax_base_line_dict()
-                    for line in order_lines
-                ])
-                totals = tax_results['totals']
-                amount_untaxed = totals.get(order.currency_id, {}).get('amount_untaxed', 0.0)
-                amount_tax = totals.get(order.currency_id, {}).get('amount_tax', 0.0)
-            else:
-                amount_untaxed = sum(order_lines.mapped('price_subtotal'))
-                amount_tax = sum(order_lines.mapped('price_tax'))
+            order_lines = order.order_line.filtered(lambda x: not x.display_type and not x.hide)
 
-            order.amount_untaxed = amount_untaxed
-            order.amount_tax = amount_tax
-            order.amount_total = order.amount_untaxed + order.amount_tax
-        print("Amount Untaxed:", amount_untaxed)
-        print("Amount Tax:", amount_tax)
-        print("Amount Total:", order.amount_total)
-        self._compute_tax_totals()
+            if not order_lines:
+                order.amount_untaxed = 0.0
+                order.amount_tax = 0.0
+                order.amount_total = 0.0
+            else:
+                # Calculate base for global discount (sum of line subtotals before global discount)
+                base_for_global_discount = sum(line.price_subtotal for line in order_lines)
+
+                effective_global_discount_rate = 0.0
+                if base_for_global_discount != 0: # Avoid division by zero
+                    if order.global_discount_type == 'percentage':
+                        effective_global_discount_rate = (order.global_discount_percentage or 0.0) / 100.0
+                    elif order.global_discount_type == 'fixed':
+                        # Calculate rate, ensure it's not more than 1 (100%)
+                        effective_global_discount_rate = min((order.global_discount_fixed_amount or 0.0) / base_for_global_discount, 1.0)
+                
+                # Clamp the rate between 0.0 and 1.0
+                effective_global_discount_rate = min(max(0.0, effective_global_discount_rate), 1.0)
+
+                new_tax_base_lines = []
+                # en _amount_all, después de construir new_tax_base_lines
+                if new_tax_base_lines:
+                    # 🔸  Asegura que todos los taxes usados en las líneas existen y están flushados
+                    self.env.cr.flush()
+
+                    tax_results = self.env['account.tax']._compute_taxes(new_tax_base_lines)
+
+                for line in order_lines:
+                    line_dict = line._convert_to_tax_base_line_dict()
+                    # Apply this line's share of the global discount to its price_unit
+                    # line_dict['price_unit'] is price after line discount but before global discount
+                    line_dict['price_unit'] = line_dict['price_unit'] * (1 - effective_global_discount_rate)
+                    new_tax_base_lines.append(line_dict)
+
+                if not new_tax_base_lines: # Should not happen if order_lines was not empty, but as a safeguard
+                    order.amount_untaxed = 0.0
+                    order.amount_tax = 0.0
+                    order.amount_total = 0.0
+                else:
+                    tax_results = self.env['account.tax']._compute_taxes(new_tax_base_lines)
+                    totals = tax_results['totals']
+                    
+                    # The amount_untaxed from tax_results is now the sum of line subtotals *after* global discount
+                    amount_untaxed = totals.get(order.currency_id, {}).get('amount_untaxed', 0.0)
+                    amount_tax = totals.get(order.currency_id, {}).get('amount_tax', 0.0)
+
+                    order.amount_untaxed = amount_untaxed
+                    order.amount_tax = amount_tax
+                    order.amount_total = order.amount_untaxed + order.amount_tax
+            
+            # The print statements might be for debugging and can be kept or removed based on final requirements.
+            # For now, I'll assume they should reflect the final computed values.
+            print("Amount Untaxed:", order.amount_untaxed)
+            print("Amount Tax:", order.amount_tax)
+            print("Amount Total:", order.amount_total)
+            self._compute_tax_totals()
+
+    def _compute_global_discount(self):
+        # 2025.05.30: Se agrega el calculo de los totales tomando en cuenta los descuentos globales
+        # Distribuir el descuento global a cada linea segun el peso de la linea en el total de la factura
+        for order in self:
+            if not order.order_line:
+                continue
+                
+            # Calcular el monto total de la factura sin descuento (subtotal base)
+            subtotal = sum(line.product_qty * line.price_unit for line in order.order_line if not line.hide)
+            
+            if subtotal == 0:
+                continue
+                
+            if order.global_discount_type == 'fixed':
+                # Descuento global fijo: distribuir proporcionalmente según el peso de cada línea
+                for line in order.order_line:
+                    if line.hide:
+                        continue
+                        
+                    line_subtotal = line.product_qty * line.price_unit
+                    peso = line_subtotal / subtotal if subtotal > 0 else 0
+                    descuento_linea_total = order.global_discount_fixed_amount * peso
+                    
+                    # El descuento fijo por unidad
+                    line_discount_fixed_per_unit = descuento_linea_total / line.product_qty if line.product_qty > 0 else 0
+                    
+                    # Calcular el porcentaje equivalente
+                    line_discount_percentage = (line_discount_fixed_per_unit / line.price_unit * 100) if line.price_unit > 0 else 0
+                    
+                    # Solo escribir el tipo y los valores base - el campo computado calculará discount_fixed_amount
+                    line.write({
+                        'discount_type': 'fixed',
+                        'discount': line_discount_percentage
+                    })
+                    
+            elif order.global_discount_type == 'percentage':
+                # Descuento global porcentual: aplicar el mismo porcentaje a todas las líneas
+                for line in order.order_line:
+                    if line.hide:
+                        continue
+                        
+                    # Solo escribir el tipo y porcentaje - el campo computado calculará discount_fixed_amount
+                    line.write({
+                        'discount_type': 'percentage',
+                        'discount': order.global_discount_percentage
+                    })
+                    
+            else:
+                # Para 'percentage_line' o 'fixed_line': no aplicar descuento global automático
+                pass
+                
+        # Fuerza el volcado de datos al cursor
+        self.env.cr.flush()
+    
+    @api.constrains('global_discount_type', 'global_discount_fixed_amount', 'order_line', 'order_line.price_subtotal')
+    def _check_global_discount_fixed_amount(self):
+        for order in self:
+            if order.global_discount_type == 'fixed' and order.global_discount_fixed_amount:
+                # Calculate current total subtotal from lines (already net of line discounts)
+                # Ensure to use the same filtering as in _amount_all for consistency
+                order_lines = order.order_line.filtered(lambda x: not x.display_type and not x.hide)
+                current_subtotal = sum(line.price_subtotal for line in order_lines)
+                if order.global_discount_fixed_amount > current_subtotal:
+                    raise UserError(_('Global fixed discount amount (%(amount).2f) cannot exceed the total untaxed amount before global discount (%(subtotal).2f).') % {
+                        'amount': order.global_discount_fixed_amount,
+                        'subtotal': current_subtotal
+                    })
 
     @api.depends_context('lang')
     @api.depends('order_line.taxes_id', 'order_line.price_subtotal', 'amount_total', 'amount_untaxed')
@@ -385,6 +546,129 @@ class PurchaseOrder(models.Model):
             
             order.purchase_history_ids = lines
 
+    total_discount_amount_lines = fields.Monetary(
+        string='Total Descuento por Líneas',
+        compute='_compute_total_discount_amount_lines',
+        store=False,
+        currency_field='currency_id'
+    )
+
+    @api.depends(
+        'order_line.discount',
+        'order_line.discount_type',
+        'order_line.discount_fixed_amount',
+        'order_line.price_unit',
+        'order_line.product_qty',
+        'global_discount_type'
+    )
+    def _compute_total_discount_amount_lines(self):
+        for order in self:
+            total = 0.0
+            if order.global_discount_type == 'percentage_line':
+                total = sum((line.price_unit * line.product_qty) * (line.discount / 100.0) for line in order.order_line if not line.hide)
+            elif order.global_discount_type == 'fixed_line':
+                total = sum(line.discount_fixed_amount * line.product_qty for line in order.order_line if not line.hide)
+            order.total_discount_amount_lines = total
+            # 2025.06.06: Calcular total de descuentos de la orden de compra
+            order.total_discount = order.total_discount_amount_lines
+    
+    @api.onchange('global_discount_type', 'global_discount_percentage', 'global_discount_fixed_amount')
+    def _onchange_global_discount_type(self):
+        for order in self:
+            # Primero limpiar descuentos existentes en las líneas
+            for line in order.order_line:
+                if order.global_discount_type == 'percentage':
+                    line.discount_type = 'percentage'
+                    # Los valores se calcularán en _compute_global_discount
+                elif order.global_discount_type == 'fixed':
+                    line.discount_type = 'fixed'
+                    # Los valores se calcularán en _compute_global_discount
+                elif order.global_discount_type == 'percentage_line':
+                    line.discount_type = 'percentage'
+                    # Opcional: establecer valor por defecto
+                    line.discount = 0.0
+                    line.discount_fixed_amount = 0.0
+                    line.price_unit_discounted = 0.0
+                    #if not line.discount:
+                    #    line.discount = order.global_discount_percentage
+                    # Recalcular el monto fijo basado en el porcentaje de la línea
+                    # line.discount_fixed_amount = (line.discount / 100.0) * line.price_unit if line.price_unit > 0 else 0
+                elif order.global_discount_type == 'fixed_line':
+                    line.discount_type = 'fixed'
+                    # line.discount_fixed_amount = 0.0
+                    line.price_unit_discounted = 0.0
+                    # Limpiar valores globales para este modo
+                    line.discount = 0.0
+                        
+            # Aplicar la distribución del descuento global (solo para 'percentage' y 'fixed')
+            if order.global_discount_type in ['percentage', 'fixed']:
+                order._compute_global_discount()
+                
+        # 2025.05.31: Inicializar los descuentos globales
+        for order in self:
+            if order.global_discount_type == 'percentage':
+                order.global_discount_fixed_amount = 0.0
+            elif order.global_discount_type == 'fixed':
+                order.global_discount_percentage = 0.0
+            elif order.global_discount_type == 'percentage_line':
+                order.global_discount_percentage = 0.0
+                order.global_discount_fixed_amount = 0.0
+            elif order.global_discount_type == 'fixed_line':
+                order.global_discount_percentage = 0.0
+                order.global_discount_fixed_amount = 0.0
+    
+        # Recalcular totales de la orden de compra
+        self._amount_all()
+
+    total_discount_percentage = fields.Float(
+        string='Total Discount (%)',
+        compute='_compute_total_discount_percentage',
+        store=False
+    )
+    total_discount_fixed_amount = fields.Monetary(
+        string='Total Discount Fixed',
+        compute='_compute_total_discount_fixed_amount',
+        store=False,
+        currency_field='currency_id'
+    )
+
+    @api.depends('order_line.discount', 'order_line.discount_type')
+    def _compute_total_discount_percentage(self):
+        for order in self:
+            # Suma solo los descuentos en porcentaje
+            order.total_discount_percentage = sum(
+                line.discount for line in order.order_line if line.discount_type == 'percentage'
+            )
+
+    @api.depends('order_line.discount_fixed_amount', 'order_line.discount_type')
+    def _compute_total_discount_fixed_amount(self):
+        for order in self:
+            # Suma solo los descuentos fijos
+            order.total_discount_fixed_amount = sum(
+                line.discount_fixed_amount * line.product_qty for line in order.order_line if line.discount_type == 'fixed'
+            )
+    def _compute_subtotal_without_discount(self):
+        for order in self:
+            subtotal = 0.0
+            for line in order.order_line:
+                if not line.hide:
+                    subtotal += line.price_unit * line.product_qty
+            return subtotal
+    def _compute_total_discount(self):
+        for order in self:
+            total_discount = 0.0
+            if order.global_discount_type == 'percentage':
+                total_discount = order.global_discount_percentage * order.subtotal_without_discount / 100.0
+            elif order.global_discount_type == 'fixed':
+                total_discount = order.global_discount_fixed_amount
+            elif order.global_discount_type == 'percentage_line':
+                #total_discount = order.global_discount_percentage * order.subtotal_without_discount / 100.0
+                total_discount = order.total_discount_amount_lines
+            elif order.global_discount_type == 'fixed_line':
+                #total_discount = order.global_discount_fixed_amount
+                total_discount = order.total_discount_amount_lines
+            return total_discount
+
 class PurchaseOrderLine(models.Model):
     _inherit = 'purchase.order.line'
 
@@ -399,6 +683,18 @@ class PurchaseOrderLine(models.Model):
                                string="Fase",
                                tracking=True,
                                domain="[('account_analytic_id', '=', account_analytic_id)]")
+    discount_type = fields.Selection([
+        ('percentage', 'Percentage'),
+        ('fixed', 'Fixed Amount')],
+        string='Tipo Descuento',
+        default='percentage',
+        tracking=True)
+    discount_fixed_amount = fields.Monetary(
+        string='Descuento Fijo',
+        compute='_compute_discount_fixed_amount',
+        inverse='_inverse_discount_fixed_amount',
+        store=True,
+        tracking=True)
     
 
     _sql_constraints = [
@@ -406,6 +702,11 @@ class PurchaseOrderLine(models.Model):
             "discount_limit",
             "CHECK (discount <= 100.0)",
             "Discount must be lower than 100%.",
+        ),
+        (
+            "discount_fixed_amount_limit",
+            "CHECK (discount_fixed_amount >= 0.0)",
+            "Discount amount must be positive.",
         )
     ]
 
@@ -414,10 +715,87 @@ class PurchaseOrderLine(models.Model):
         string='Initial Discounted Price'
     )
 
-    @api.depends('price_unit', 'discount')
+    @api.depends('price_unit', 'discount', 'discount_type', 'discount_fixed_amount')
     def _compute_price_unit_discounted(self):
         for line in self:
-            line.price_unit_discounted = line.price_unit * (1 - (line.discount or 0.0) / 100.0)
+            if line.discount_type == 'percentage':
+                line.price_unit_discounted = line.price_unit * (1 - (line.discount or 0.0) / 100.0)
+            elif line.discount_type == 'fixed':
+                # Ensure discounted price doesn't go below zero
+                line.price_unit_discounted = max(0.0, line.price_unit - line.discount_fixed_amount)
+            else:
+                line.price_unit_discounted = line.price_unit
+
+    @api.depends('product_qty', 'price_unit', 'taxes_id', 'discount', 'discount_type', 'discount_fixed_amount')
+    def _compute_amount(self):
+        for line in self:
+            price_reduce = 0.0
+            if line.discount_type == 'percentage':
+                price_reduce = line.price_unit * (1.0 - (line.discount or 0.0) / 100.0)
+            elif line.discount_type == 'fixed':
+                price_reduce = line.price_unit - line.discount_fixed_amount
+                if price_reduce < 0.0: # Ensure price_reduce doesn't go below zero
+                    price_reduce = 0.0
+            else: # Failsafe, though should not happen with a default value
+                price_reduce = line.price_unit
+
+            # Sanity check for fixed discount not exceeding total value before tax
+            if line.discount_type == 'fixed' and line.discount_fixed_amount > (line.price_unit * line.product_qty) and line.product_qty > 0 :
+                # This case should ideally be prevented by a constraint or onchange warning
+                # For now, we ensure price_subtotal is not negative.
+                # The price_reduce here is per unit, so the check should be against price_unit.
+                # However, the fixed discount is often conceptualized against the line total.
+                # Let's adjust price_reduce to be per unit for tax calculation.
+                # If discount_fixed_amount is meant for the whole line, then price_reduce logic needs care.
+                # Assuming discount_fixed_amount is a discount per unit for now as per typical POL structure.
+                # If discount_fixed_amount is for the line total, then:
+                # price_reduce_total_line = (line.price_unit * line.product_qty) - line.discount_fixed_amount
+                # price_reduce_unit = price_reduce_total_line / line.product_qty if line.product_qty else 0
+                # For now, sticking to discount_fixed_amount as a per-unit discount based on typical field placement.
+                # Let's assume discount_fixed_amount is a discount per unit.
+                # price_reduce was already calculated as line.price_unit - line.discount_fixed_amount
+                # The check `if price_reduce < 0.0: price_reduce = 0.0` handles this at unit level.
+                pass # The negative check for price_reduce already handles this at unit level.
+
+
+            price_on_line = line.product_qty * price_reduce
+            # 2025.05.30: Se recalcula los impuestos para evitar CacheMiss en company_id
+            if line.taxes_id:
+                # recarga los impuestos para evitar CacheMiss en company_id
+                taxes_rs = self.env['account.tax'].browse(line.taxes_id.ids)
+                # opcional: asegurar flush si acabas de crear impuestos en la misma transacción
+                self.env.cr.flush()
+                taxes_rs = taxes_rs.with_company(line.order_id.company_id)
+                taxes = taxes_rs.compute_all(
+                    price_reduce,
+                    line.order_id.currency_id,
+                    line.product_qty,
+                    product=line.product_id,
+                    partner=line.order_id.partner_id
+                )
+
+                line.update({
+                    'price_tax': sum(t.get('amount', 0.0) for t in taxes.get('taxes', [])),
+                    'price_total': taxes['total_included'],
+                    'price_subtotal': taxes['total_excluded'],
+                })
+            else:
+                line.update({
+                    'price_tax': 0.0,
+                    'price_total': price_on_line,
+                    'price_subtotal': price_on_line,
+                })
+    @api.constrains('discount_type', 'discount_fixed_amount', 'price_unit', 'product_qty')
+    def _check_discount_fixed_amount(self):
+        for line in self:
+            if line.discount_type == 'fixed' and line.product_qty > 0: # Avoid division by zero if product_qty is 0
+                # The discount_fixed_amount is per unit in this implementation
+                if line.discount_fixed_amount > line.price_unit:
+                    raise models.ValidationError(_('Fixed discount amount cannot exceed the unit price.'))
+            # If discount_fixed_amount was intended for the total line:
+            # if line.discount_type == 'fixed' and line.discount_fixed_amount > (line.price_unit * line.product_qty):
+            #     raise models.ValidationError(_('Fixed discount amount cannot exceed the total line amount (Price * Quantity).'))
+
 
     @api.onchange('product_qty')
     def _onchange_product_qty(self):
@@ -481,7 +859,7 @@ class PurchaseOrderLine(models.Model):
     @api.depends('product_id', 'order_id.partner_id')
     def _compute_line_history_ids(self):
         for line in self:
-            # Definir qué se considera “historial”.
+            # Definir qué se considera "historial".
             # Por ejemplo, líneas de compra con el mismo product_id y partner
             # en órdenes confirmadas o realizadas, excluyendo la línea actual.
             domain = [
@@ -529,3 +907,51 @@ class PurchaseOrderLine(models.Model):
         for line in self:
             # si pr_ref_ids es un Many2many, por ejemplo:
             line.pr_ref_ids = [(6, 0, [line.order_id.pr_ref_id.id])]
+
+    @api.onchange('discount_type', 'price_unit', 'discount', 'discount_fixed_amount', 'product_qty')
+    def _onchange_discount_type(self):
+        for line in self:
+            if line.discount_type == 'fixed':
+                # Al cambiar a descuento fijo, calcular el porcentaje equivalente
+                if line.price_unit > 0 and line.discount_fixed_amount >= 0:
+                    # El descuento fijo es por unidad
+                    line.discount = (line.discount_fixed_amount / line.price_unit) * 100
+                else:
+                    line.discount = 0.0
+            elif line.discount_type == 'percentage':
+                # Al cambiar a descuento porcentual, calcular el monto fijo equivalente
+                if line.price_unit > 0 and line.discount >= 0:
+                    line.discount_fixed_amount = (line.discount / 100.0) * line.price_unit
+                else:
+                    line.discount_fixed_amount = 0.0
+                    
+        # Forzar recálculo de campos computados
+        for line in self:
+            line._compute_price_unit_discounted()
+            line._compute_amount()
+            
+        # Si hay orden padre, recalcular totales
+        if self.order_id:
+            self.order_id._amount_all()
+        
+        # 2025.06.06: Calcular total de descuentos de la orden de compra
+        self.order_id.total_discount = self.order_id._compute_total_discount()
+
+    @api.depends('discount_type', 'discount', 'price_unit')
+    def _compute_discount_fixed_amount(self):
+        # 2025.05.31: Recalcular los descuentos fijos de las líneas de compra
+        for line in self:
+            if line.discount_type == 'percentage':
+                # Calcular monto fijo basado en el porcentaje y precio unitario
+                line.discount_fixed_amount = (line.discount / 100.0) * line.price_unit if line.price_unit > 0 and line.discount > 0 else 0.0
+            elif line.discount_type == 'fixed':
+                # Para tipo fijo, calcular también basado en el porcentaje (que fue calculado en _compute_global_discount)
+                line.discount_fixed_amount = (line.discount / 100.0) * line.price_unit if line.price_unit > 0 and line.discount > 0 else 0.0
+            else:
+                line.discount_fixed_amount = 0.0
+
+    def _inverse_discount_fixed_amount(self):
+        for line in self:
+            if line.discount_type == 'fixed' and line.price_unit > 0:
+                # Cuando el usuario cambia el monto fijo manualmente, calcular el porcentaje equivalente
+                line.discount = (line.discount_fixed_amount / line.price_unit) * 100 if line.discount_fixed_amount > 0 else 0.0

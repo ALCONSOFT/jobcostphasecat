@@ -228,8 +228,24 @@ class JC_StockMoveLine(models.Model):
         "project.category", string="Categoria", tracking=True)
     account_analytic_id = fields.Many2one(
         'account.analytic.account',
-        readonly=False,
-        string='Cuenta Analítica')
+        readonly=True,
+        string='Cuenta Analítica',
+        compute='_compute_account_analytic_id',
+        related='move_id.account_analytic_id',
+        store=True)
+    # Alconor: 2025.06.03
+    # analytic_distribution = fields.Float(
+    #         string="Distribución Analítica",
+    #         related="analytic_distribution",
+    #         store=True,
+    #         readonly=True
+    #     )    
+
+    @api.depends('move_id.account_analytic_id')
+    def _compute_account_analytic_id(self):
+        for line in self:
+            if not line.account_analytic_id and line.move_id.account_analytic_id:
+                line.account_analytic_id = line.move_id.account_analytic_id
     # Alconor: 23-dic-2024
     vehicle_id = fields.Many2one(
         'fleet.vehicle', 
@@ -242,12 +258,4 @@ class JC_StockMoveLine(models.Model):
                                string="Fase",
                                tracking=True
                                )
-
-#   RESTRICCION POR METODO: !!!!! NO FUNCIONA ¡¡¡¡¡¡
-#    @api.constrains('phase_id')
-#    def _check_phase_id_aaa(self):
-#        for record in self:
-#            if record.phase_id.account_analytic_id == record.analytic_account_id:
-#                raise models.ValidationError(
-#                    'La Cuenta Analítica debe ser la misma Cuenta Analítica de la Fase!')
 
