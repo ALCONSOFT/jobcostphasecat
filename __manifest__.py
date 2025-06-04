@@ -64,7 +64,7 @@
                 - Corrigiendo incidencia: cambiando la logica de las entregas de Proveedores INternos
                     - cambaindo la ubicaion origen
                     - creando dos transferencias: 1 salida del almacen origen y 1 entrada al almacen destino: 2025.02.24
-                - Corrigiendo incidencia: Agregando funcionalidades: Agregar al “lineas de pedidos de compra”:
+                - Corrigiendo incidencia: Agregando funcionalidades: Agregar al "lineas de pedidos de compra":
                      - la cuenta analitica,
                      - analitico,
                      - fase,
@@ -96,6 +96,12 @@
                     opcion configurable> Permitir duplicar solo transferencia en estado plantilla. 2025.05.02
 
                 - Corrigiendo incidencia: cuenta anlitica de linea de SdC por default copiarla del encabezado. 2025.04.14
+                ----------------------------------------------------------------------------------------------------------
+                - Moviendo funcionalidad: de ac_sync_odoo_odoo al modulo de jobcostphasecat plantilla y 
+                  opcion configurable> Permitir duplicar solo transferencia en estado plantilla. 2025.05.02
+                - Agregando funcionalidad: campo numero de partes de fabricante en Product.template. 2025.06.03
+                - Agregando funcionalidad: Gestión de descuentos en O.C. 2025.06.03
+                - Agregando funcionalidad: Privielgios para Doble Transferencia Interna 2025.06.03
                 
     """,
 
@@ -106,7 +112,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '2025.05.02 - 21:50',
+    'version': '2025.06.03 - 20:50',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',
@@ -118,6 +124,7 @@
                 'purchase_order_general_discount',       # Modulo que agrega descuento general a la orden de compra
                 'account_fleet',                         # Modulo que agrega vehiculos a la factura
                 'email_template_qweb',                   # Modulo que permite ediar vistas de qweb para correos en templates
+                'product',
                 ],
 
     # always loaded: Aqui se cargan los formularios de vista.
