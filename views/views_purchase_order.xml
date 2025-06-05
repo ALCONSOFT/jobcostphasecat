@@ -344,7 +344,7 @@
                         type="object"
                         class="btn-secondary"
                         groups="jobcostphasecat.group_rfq_approver"
-                        attrs="{'invisible': [('state', '!=', 'to approve')]}"
+                        attrs="{'invisible': [('state', '!=', 'waiting_for_price_revision')]}"
                     />
                 </xpath>
                 <!-- Insertar boton: Envio para Aprobación de Precio-->
