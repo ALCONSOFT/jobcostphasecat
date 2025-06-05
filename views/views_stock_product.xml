@@ -11,6 +11,20 @@
                class="img-fluid"
                options="{'preview_image': 'image_512'}"
                style="max-width: 300px; max-height: 300px;"/>
+        
+      </xpath>
+
+    </field>
+  </record>
+
+  <!--Crear otra vista que herede la vista: product_template_only_form_view para agregar el campo part_number-->
+  <record id="view_product_template_only_form_part_number" model="ir.ui.view">
+    <field name="name">product.template.only.form.part.number</field>
+    <field name="model">product.template</field>
+    <field name="inherit_id" ref="product.product_template_only_form_view"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='default_code']" position="after">
+        <field name="part_number"/>
       </xpath>
     </field>
   </record>

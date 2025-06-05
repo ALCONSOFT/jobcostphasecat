@@ -78,6 +78,21 @@
         <record id="group_attachment_user" model="res.groups">
             <field name="name">Attachment User</field>
             <field name="category_id" ref="base.module_category_hidden"/>
-        </record>        
+        </record> 
+        <!-- ***********************************************-->
+    <!--================================================================-->
+    <!--  Grupo para permitir “Doble Transferencia Interna”              -->
+    <!--================================================================-->
+        <record id="group_double_internal_transfer" model="res.groups">
+            <!-- Este será el nombre que veremos en Ajustes → Usuarios & Compañías → Grupos -->
+            <field name="name">Double Internal Transfer</field>
+
+            <!-- Es buena práctica encuadrar el grupo dentro de una categoría.
+                Aquí lo anidamos debajo de “Administración de Compras” -->
+            <field name="category_id" ref="purchase.group_purchase_manager"/>
+
+            <!-- (Opcional) Puedes asignar otras propiedades, 
+                pero para un grupo básico basta con name+category. -->
+        </record>    
     </data>
 </odoo>
