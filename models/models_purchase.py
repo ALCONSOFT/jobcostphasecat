@@ -6,6 +6,20 @@ from itertools import groupby
 class PurchaseOrder(models.Model):
     _inherit = 'purchase.order'
 
+    # Agregando estado: "cerrado "al campo: invoice_status (estado de facturación)
+    invoice_status = fields.Selection([
+        ('no', 'Nothing to Bill'),
+        ('to invoice', 'Waiting Bills'),
+        ('invoiced', 'Fully Billed'),
+        ('done', 'Cerrado'),
+    ],
+        string='Estado de Facturación',
+        compute='_get_invoiced',
+        store=True,
+        readonly=False,
+        tracking=True,
+        copy=False, default='no')
+    
     total_price_total = fields.Monetary(compute='_compute_total_price_total', string='Total Price Total')
 
     def unlink(self):
@@ -501,7 +515,10 @@ class PurchaseOrder(models.Model):
                 not float_is_zero(line.qty_to_invoice, precision_digits=precision)
                 for line in valid_lines
             ):
-                order.invoice_status = 'to invoice'
+                if order.invoice_status == 'done':
+                    order.invoice_status = 'done'
+                else:
+                    order.invoice_status = 'to invoice'
             elif valid_lines and all(
                 float_is_zero(line.qty_to_invoice, precision_digits=precision)
                 for line in valid_lines

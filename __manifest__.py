@@ -102,6 +102,10 @@
                 - Agregando funcionalidad: campo numero de partes de fabricante en Product.template. 2025.06.03
                 - Agregando funcionalidad: Gestión de descuentos en O.C. 2025.06.03
                 - Agregando funcionalidad: Privielgios para Doble Transferencia Interna 2025.06.03
+                -----------------------------------------------------------------------------------------
+                - Agregando funcionalidad: Mover el boton [Descartar] al estado de O.C. [Revisión de Precio]. 2025.06.05
+                - Agregando funcionalidad: Funcionalidad que permite cerrar manualmente el estado de facturación en una
+                  orden de compra. De este modo, la orden de compra queda marcada como “cerrada”. 2025.06.05
                 
     """,
 
@@ -112,7 +116,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '2025.06.03 - 20:50',
+    'version': '2025.06.05 - 13:21',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',
