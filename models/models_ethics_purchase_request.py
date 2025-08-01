@@ -88,7 +88,8 @@ class EthicsPurchaseRequest(models.Model):
 
     # Extendiendo el campo 'state' para agregar el nuevo estado
     state = fields.Selection(selection_add=[('waiting_for_audit', 'Esperando Auditoría'),
-                                                ('waiting_for_buyer', "Esperando Comprador")
+                                                ('waiting_for_buyer', "Esperando Comprador"),
+                                                ('descarted', "Descartado")
         ], ondelete={'waiting_for_approver': 'cascade'})
     pr_lines = fields.One2many('purchase.request.line', 'pr_id', tracking=True)
 
@@ -357,6 +358,9 @@ class EthicsPurchaseRequest(models.Model):
         )
     
     def reject_verifier_pr_jc(self):
+        if not self.env.user.has_group('account.group_account_manager'):
+            raise UserError(_("Solo los contadores administradores pueden enviar solicitudes a borrador."))
+        
         super(EthicsPurchaseRequest, self).reject_verifier_pr()
         self.message_post(
             body=_('SdC: ' + self.name + ' RECHAZADA en la Verificación. - Para mayor información consulte la notas internas o contacte con su Verificad@r')
@@ -382,11 +386,6 @@ class EthicsPurchaseRequest(models.Model):
     unauthorized_warehouses = fields.Many2many('stock.warehouse', string='Almacenes no permitidos', compute='_compute_unauthorized_warehouses', store=False)
 
     @api.depends()
-    def _compute_current_user(self):
-        for record in self:
-            record.current_user_id = self.env.user
-
-    @api.depends()
     def _compute_unauthorized_warehouses(self):
         for record in self:
             record.unauthorized_warehouses = self.env.user.warehouse_ids
@@ -404,6 +403,17 @@ class EthicsPurchaseRequest(models.Model):
         compute='_compute_mostrar_a_usuario', 
         store=False
     )
+
+    def action_descarted(self):
+        """Método para marcar la solicitud como descartada.
+        Solo los usuarios con el grupo de contadores administradores pueden ejecutar esta acción."""
+        if not self.env.user.has_group('account.group_account_manager'):
+            raise UserError(_("Solo los contadores administradores pueden descartar solicitudes."))
+        
+        self.state = 'descarted'
+        self.message_post(
+            body=_('SdC: ' + self.name + ' ha sido DESCARTADA por ' + self.env.user.name)
+        )
 
 class EthicsPuchasRequestLine(models.Model):
     _inherit = 'purchase.request.line'

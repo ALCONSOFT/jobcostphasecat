@@ -147,9 +147,11 @@
                         attrs="{'invisible': [('state', '!=', 'waiting_for_verifier')]}"
                         groups="ethics_purchase_request.group_request_user"/>
                 <button name="reject_verifier_pr_jc"
-                        string="Enviar a Borrador" type="object" class='oe_highlight'
-                        attrs="{'invisible': [('state', '=', 'confirm')]}"
-                        groups="ethics_purchase_request.group_request_user"/>
+                        string="Enviar a Borrador"
+                        type="object"
+                        groups="account.group_account_manager"
+                        attrs="{'invisible': [('state', 'not in', ['waiting_for_verifier', 'descarted'])]}"
+                        class="btn-primary"/>
             </xpath>
 
             <!-- Verificador envia a Auditor-->
@@ -193,6 +195,16 @@
                     can_create="false"
                     options="{'no_create': True, 'no_create_edit': True}"
                     attrs="{'column_invisible': [('parent.state', 'not in', ['waiting_for_approver','confirm','waiting_for_buyer'])]}"/>
+            </xpath>
+
+            <!-- Agregar el botón Descartar -->
+            <xpath expr="//header" position="inside">
+                <button name="action_descarted" 
+                        string="Descartar" 
+                        type="object" 
+                        groups="account.group_account_manager"
+                        attrs="{'invisible': [('state', 'in', ['cancel', 'done', 'descarted'])]}"
+                        class="btn-danger"/>
             </xpath>
 
         </field>

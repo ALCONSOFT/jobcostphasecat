@@ -90,7 +90,7 @@
             <!-- Es buena práctica encuadrar el grupo dentro de una categoría.
                 Aquí lo anidamos debajo de “Administración de Compras” -->
             <field name="category_id" ref="purchase.group_purchase_manager"/>
-
+            <field name="implied_ids" eval="[(4, ref('purchase.group_purchase_manager'))]"/>
             <!-- (Opcional) Puedes asignar otras propiedades, 
                 pero para un grupo básico basta con name+category. -->
         </record>    

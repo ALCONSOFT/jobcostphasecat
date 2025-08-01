@@ -68,6 +68,12 @@ group by aaa.id, ptp."name", ptp.notes, ptp.company_id);
                   ] 
         return super()._name_search(name=name, args=args, operator=operator, limit=limit, name_get_uid=name_get_uid)
 
+class StockPicking(models.Model):
+    _inherit = 'stock.picking'
+
+    category_id = fields.Many2one(
+        "project.category", string="Category", tracking=True)
+
 class JC_StockMove(models.Model):
     _inherit = "stock.move"
 

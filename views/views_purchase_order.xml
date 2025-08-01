@@ -343,7 +343,7 @@
                         string="Descartar"
                         type="object"
                         class="btn-secondary"
-                        groups="jobcostphasecat.group_rfq_approver"
+                        groups="jobcostphasecat.group_rfq_price_approver"
                         attrs="{'invisible': [('state', '!=', 'waiting_for_price_revision')]}"
                     />
                 </xpath>

@@ -37,7 +37,7 @@ class IrAttachment(models.Model):
 
         # Mantener restricciones para usuarios externos
         if not self.env.is_admin() and not self.env.user._is_internal():
-            raise AccessError(_("Disculpe! No tiene permiso para adjuntar a este documento."))
+            raise AccessError(_("Disculpe! No tiene permiso para adjuntar a este documento.  Por favor solicite permisos al administrador. Usuario Adjuntador"))
 
         # Recopilar registros a verificar
         model_ids = defaultdict(set)
@@ -51,7 +51,7 @@ class IrAttachment(models.Model):
                 if public and mode == 'read':
                     continue
                 if not self.env.is_system() and (res_field or (not res_id and create_uid != self.env.uid)):
-                    raise AccessError(_("Disculpe! No tiene permiso para adjuntar a este documento."))
+                    raise AccessError(_("Disculpe! No tiene permiso para adjuntar a este documento.  Por favor solicite permisos al administrador. Usuario Adjuntador"))
                 if not (res_model and res_id):
                     continue
                 model_ids[res_model].add(res_id)

@@ -106,6 +106,10 @@
                 - Agregando funcionalidad: Mover el boton [Descartar] al estado de O.C. [Revisión de Precio]. 2025.06.05
                 - Agregando funcionalidad: Funcionalidad que permite cerrar manualmente el estado de facturación en una
                   orden de compra. De este modo, la orden de compra queda marcada como “cerrada”. 2025.06.05
+                -----------------------------------------------------------------------------------------
+                - Corrigiendo funcionalidad: Agregar boton [Descartar] al estado de O.C. [Revisión de Precio]. 2025.06.18
+                    - Se habia programado para solo que se viera con el grupo aprobador de compras
+                - Agregando funcionalidad: Boton Descartar en PR. 2025.06.25
                 
     """,
 
@@ -116,7 +120,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '2025.06.05 - 13:21',
+    'version': '2025.06.25 - 20:00',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',
