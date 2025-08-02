@@ -912,12 +912,106 @@ class PurchaseOrderLine(models.Model):
             'target': 'current',
         }
     # 2025.02.26: Agregar campo pr_ref_ids para historial de compras a la orden de compra
+    # 2025.08.01: Modificado para permitir ordenamiento (store=True)
     pr_ref_ids = fields.Many2one(
         related='order_id.pr_ref_id',
-        string='PR References',
-        store=False,
+        string='Referencia SdC',
+        store=True,
         readonly=True
     )
+    
+    # 2025.08.01: Agregar campo relacionado para categoría del producto
+    # 2025.08.01: Modificado store=True para permitir agrupación
+    product_categ_id = fields.Many2one(
+        related='product_id.categ_id',
+        string='Categoría Producto',
+        store=True,
+        readonly=True
+    )
+    
+    # 2025.08.01: Agregar campo relacionado para fecha de SdC
+    pr_request_date = fields.Date(
+        related='pr_ref_ids.request_date',
+        string='Fecha SdC',
+        store=True,
+        readonly=True
+    )
+    
+    # 2025.08.01: Campo calculado para días diferidos entre SdC y OC
+    days_deferred = fields.Integer(
+        string='Días Diferidos',
+        compute='_compute_days_deferred',
+        store=True,
+        readonly=True,
+        help='Días transcurridos entre la Fecha de SdC y la Fecha de Orden de Compra'
+    )
+    
+    # 2025.08.01: Campo calculado para horas diferidos entre SdC y OC
+    hours_deferred = fields.Float(
+        string='Horas Diferidas',
+        compute='_compute_days_deferred',
+        store=True,
+        readonly=True,
+        digits=(16, 1),
+        help='Horas transcurridas entre la Fecha de SdC y la Fecha de Orden de Compra'
+    )
+    
+    # 2025.08.01: Campos calculados que excluyen líneas ocultas para totales correctos
+    price_subtotal_visible = fields.Monetary(
+        string='Subtotal (Visible)',
+        compute='_compute_visible_totals',
+        store=True,
+        readonly=True,
+        help='Subtotal excluyendo líneas ocultas'
+    )
+    
+    price_total_visible = fields.Monetary(
+        string='Total (Visible)',
+        compute='_compute_visible_totals',
+        store=True,
+        readonly=True,
+        help='Total excluyendo líneas ocultas'
+    )
+    
+    price_tax_visible = fields.Monetary(
+        string='Impuesto (Visible)',
+        compute='_compute_visible_totals',
+        store=True,
+        readonly=True,
+        help='Impuesto excluyendo líneas ocultas'
+    )
+
+    @api.depends('pr_request_date', 'date_order')
+    def _compute_days_deferred(self):
+        """Calcula los días y horas diferidos entre la fecha de SdC y la fecha de OC"""
+        for line in self:
+            if line.pr_request_date and line.date_order:
+                # Convertir fechas a datetime para cálculo preciso
+                request_datetime = fields.Datetime.from_string(str(line.pr_request_date) + ' 00:00:00')
+                order_datetime = line.date_order
+                
+                # Calcular diferencia
+                diff = order_datetime - request_datetime
+                line.days_deferred = diff.days
+                line.hours_deferred = diff.total_seconds() / 3600.0
+            else:
+                line.days_deferred = 0
+                line.hours_deferred = 0.0
+
+    @api.depends('hide', 'price_subtotal', 'price_total', 'price_tax')
+    def _compute_visible_totals(self):
+        """Calcula los totales excluyendo líneas ocultas"""
+        for line in self:
+            if line.hide:
+                # Si la línea está oculta, los campos visibles son 0
+                line.price_subtotal_visible = 0.0
+                line.price_total_visible = 0.0
+                line.price_tax_visible = 0.0
+            else:
+                # Si la línea es visible, usar los valores originales
+                line.price_subtotal_visible = line.price_subtotal
+                line.price_total_visible = line.price_total
+                line.price_tax_visible = line.price_tax
 
     @api.depends('order_id.order_line.pr_ref_ids')
     def _compute_pr_ref_ids(self):

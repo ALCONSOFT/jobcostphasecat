@@ -7,6 +7,22 @@
         <field name="mode">primary</field>
         <field name="priority">17</field>
         <field name="arch" type="xml">
+            <!-- Agregar decoraciones de color a las filas basadas en condiciones -->
+            <xpath expr="//tree" position="attributes">
+                <attribute name="decoration-danger">state == 'cancel'</attribute>
+                <attribute name="decoration-muted">hide == True</attribute>
+                <attribute name="decoration-warning">state in ['waiting_for_price_revision', 'waiting_for_approval']</attribute>
+                <attribute name="decoration-info">state in ['draft', 'sent']</attribute>
+                <attribute name="decoration-success">state == 'purchase'</attribute>
+                <attribute name="decoration-primary">state == 'done'</attribute>
+                <attribute name="decoration-bf">x_is_incomplete == True</attribute>
+            </xpath>
+            
+            <!-- Agregar pr_ref_id como primer campo antes de order_id -->
+            <xpath expr="//field[@name='order_id']" position="before">
+                <field name="pr_ref_ids" string="Referencia SdC" optional="show" widget="many2one_clickable"/>
+            </xpath>
+            
             <xpath expr="//field[@name='order_id']" position="after">
                 <field name="state" optional="hide" />
                 <field name="invoice_status" optional="hide" />
@@ -22,6 +38,7 @@
                 
             <xpath expr="//field[@name='product_id']" position="after">
                 <field name="product_type" optional="hide" />
+                <field name="product_categ_id" string="Categoría Producto" optional="show" />
             </xpath>
             <xpath expr="//field[@name='product_qty']" position="after">
                 <field name="qty_invoiced" optional="hide" />
@@ -29,22 +46,56 @@
                 <field name="qty_received" optional="hide" />
                 <field name="qty_received_manual" optional="hide" />
             </xpath>
+            <!-- Hacer el campo subtotal original configurable -->
+            <xpath expr="//field[@name='price_subtotal']" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </xpath>
+            
+            <!-- Agregar campos en el orden requerido: subtotal, total, subtotalvisible, totalvisible -->
             <xpath expr="//field[@name='price_subtotal']" position="after">
+                <!-- 1. Total original -->
+                <field name="price_total" string="Total" widget="monetary" optional="hide" />
+                
+                <!-- 2. Subtotal Visible -->
+                <field
+                    name="price_subtotal_visible"
+                    string="Subtotal Visible"
+                    widget="monetary"
+                    optional="show"
+                    sum="Subtotal General (Sin Ocultas)"
+                />
+                
+                <!-- 3. Total Visible -->
+                <field
+                    name="price_total_visible"
+                    string="Total Visible"
+                    widget="monetary"
+                    optional="show"
+                    sum="Total General (Sin Ocultas)"
+                />
+                
+                <!-- 4. Campos adicionales -->
                 <field name="taxes_id" widget="many2many_tags" optional="hide" />
                 <field
                     name="price_tax"
                     widget="monetary"
                     optional="hide"
-                    sum="Price Tax"
                 />
-                <field name="price_total" optional="hide" sum="Price Total" />
+                <field
+                    name="price_tax_visible"
+                    string="Impuesto Visible"
+                    widget="monetary"
+                    optional="hide"
+                    sum="Impuesto Total (Sin Ocultas)"
+                />
                 <field name="x_is_incomplete" optional="hide" />
-            </xpath>
-            <xpath expr="//field[@name='price_subtotal']" position="attributes">
-                <attribute name="sum">Price Subtotal</attribute>
+                <field name="hide" string="Oculto en Reporte" optional="show" />
             </xpath>
             <xpath expr="//field[@name='date_planned']" position="before">
                 <field name="date_order" optional="show" widget="date" />
+                <field name="pr_request_date" string="Fecha SdC" optional="show" widget="date" />
+                <field name="days_deferred" string="Días Dif." optional="show" />
+                <field name="hours_deferred" string="Horas Dif." optional="hide" />
             </xpath>
             <xpath expr="//tree" position="inside">
                 <field name="product_packaging_id" optional="hide" />
@@ -55,7 +106,7 @@
             <xpath expr="//field[@name='date_planned']" position="attributes">
                 <attribute name="optional">hide</attribute>
             </xpath>
-            <xpath expr="/tree" postion="inside">
+            <xpath expr="/tree" position="inside">
                 <field
                     name="invoice_lines"
                     widget="many2many_tags"
@@ -71,6 +122,21 @@
         <field name="model">purchase.order.line</field>
         <field name="arch" type="xml">
             <search>
+                <!-- Campos de búsqueda principales -->
+                <field name="pr_ref_ids" string="Ref de SdC"/>
+                <field name="order_id" string="Ref de Pedido"/>
+                <field name="partner_id" string="Proveedor"/>
+                <field name="product_id" string="Producto"/>
+                <field name="date_order" string="Order Date"/>
+                <field name="pr_request_date" string="Fecha SdC"/>
+                <field name="days_deferred" string="Días Diferidos"/>
+                <field name="state" string="Estado de Orden"/>
+                <field name="account_analytic_id" string="Analítico"/>
+                <field name="analytic_distribution" string="Distribución Analítica"/>
+                <field name="phase_id" string="Fase"/>
+                <field name="vehicle_id" string="Vehículo"/>
+                
+                <!-- Filtros Favoritos -->
                 <filter 
                     name="incomplete_deliveries" 
                     string="Incompletas: Pedidos diferentes de Recibidos en O.C. y no Ocultos"
@@ -78,18 +144,39 @@
                 <filter name="draft_orders" string="Borradores" domain="[('state','=','draft')]"/>
                 <filter name="confirmed_orders" string="Confirmadas" domain="[('state','=','purchase')]"/>
                 <filter name="cancelled_orders" string="Canceladas" domain="[('state','=','cancel')]"/>
+                <filter name="waiting_price_revision" string="Esperando Revisión Precios" domain="[('state','=','waiting_for_price_revision')]"/>
+                <filter name="waiting_approval" string="Esperando Aprobación" domain="[('state','=','waiting_for_approval')]"/>
+                <filter name="hidden_lines" string="Líneas Ocultas" domain="[('hide','=',True)]"/>
+                <filter name="visible_lines" string="Líneas Visibles" domain="[('hide','!=',True)]"/>
+                <filter name="with_vehicle" string="Con Vehículo" domain="[('vehicle_id','!=',False)]"/>
+                <filter name="with_phase" string="Con Fase" domain="[('phase_id','!=',False)]"/>
+                <filter name="delayed_processing" string="Procesamiento Demorado (+7 días)" domain="[('days_deferred','>=',7)]"/>
+                <filter name="quick_processing" string="Procesamiento Rápido (3 días o menos)" domain="[('days_deferred','&lt;=',3)]"/>
 
                 <separator/>
+                <!-- Leyenda informativa de colores -->
+                <group string="🎨 Leyenda de Colores en las Filas">
+                    <filter name="info_colors" string="🔴 Rojo=Cancelado | ⚫ Gris=Oculto | 🟡 Amarillo=Esperando | 🔵 Azul=Borrador/Enviado | 🟢 Verde=En Compra | 🔵 Azul Oscuro=Completado | 📝 Negrita=Incompleto" domain="[('id', '>', 0)]"/>
+                </group>
+                
+                <separator/>
+                <!-- Grupos Favoritos -->
+                <filter name="group_by_date_order" string="Order Date" context="{'group_by': 'date_order:month'}"/>
                 <filter name="group_by_supplier" string="Proveedor" context="{'group_by': 'partner_id'}"/>
+                <filter name="group_by_product_categ" string="Categ. Prod." context="{'group_by': 'product_categ_id'}"/>
+                <filter name="group_by_pr_ref" string="Ref de SdC" context="{'group_by': 'pr_ref_ids'}"/>
                 <filter name="group_by_order" string="Orden de Compra" context="{'group_by': 'order_id'}"/>
                 <filter name="group_by_state" string="Estado" context="{'group_by': 'state'}"/>
-                <filter name="group_by_date" string="Fecha Orden" context="{'group_by': 'date_order:month'}"/>
+                <filter name="group_by_analytic" string="Analítico" context="{'group_by': 'account_analytic_id'}"/>
+                <filter name="group_by_phase" string="Fase" context="{'group_by': 'phase_id'}"/>
+                <filter name="group_by_vehicle" string="Vehículo" context="{'group_by': 'vehicle_id'}"/>
+                <filter name="group_by_days_deferred" string="Días Diferidos" context="{'group_by': 'days_deferred'}"/>
             </search>
         </field>
     </record>
 
     <record id="action_purchase_order_line_tree_jc" model="ir.actions.act_window">
-        <field name="name">Líneas de SdP Ampliada</field>
+        <field name="name">Líneas de SdP Ampliada (🔴Cancelado 🟡Esperando 🟢Compra 🔵Hecho)</field>
         <field name="res_model">purchase.order.line</field>
         <field name="view_mode">tree</field>
         <field name="view_id" ref="purchase_order_line_tree_jc"/>
@@ -98,7 +185,7 @@
 
     <menuitem
         id="menu_purchase_order_line_tree_jc"
-        name="Líneas de SdP Ampliada"
+        name="Líneas de SdP Ampliada (🔴Cancelado 🟡Esperando 🟢Compra 🔵Hecho)"
         action="action_purchase_order_line_tree_jc"
         parent="purchase.menu_procurement_management"
         sequence="7"/>

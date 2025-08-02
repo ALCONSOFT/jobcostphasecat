@@ -105,7 +105,37 @@
                 -----------------------------------------------------------------------------------------
                 - Agregando funcionalidad: Mover el boton [Descartar] al estado de O.C. [Revisión de Precio]. 2025.06.05
                 - Agregando funcionalidad: Funcionalidad que permite cerrar manualmente el estado de facturación en una
-                  orden de compra. De este modo, la orden de compra queda marcada como “cerrada”. 2025.06.05
+                  orden de compra. De este modo, la orden de compra queda marcada como "cerrada". 2025.06.05
+                -----------------------------------------------------------------------------------------
+                - Agregando campos: Se agregan campos "Oculto en Reporte" y "Categoría Producto" a la vista árbol
+                  de líneas de SdP ampliada (purchase.order.line.tree.jc). Ambos campos son opcionales pero 
+                  se muestran inicialmente para facilitar el análisis de datos. 2025.08.01
+                - Agregando campo: Se agrega campo "Referencia SdC" (pr_ref_ids) como primer campo en la vista,
+                  permitiendo abrir el documento de Solicitud de Compra y ordenamiento. Campo modificado para
+                  ser almacenado (store=True) y utiliza widget many2one_clickable. 2025.08.01
+                - Agregando filtros y grupos: Se agregan filtros favoritos por Ref de SdC, Ref de Pedido, 
+                  Proveedor, Producto, Order Date, Estado, Analítico, Distribución Analítica, Fase y Vehículo.
+                  Grupos favoritos por Order Date, Proveedor, Categ. Prod. y Ref de SdC. 2025.08.01
+                - Agregando colores a filas: Se implementan decoraciones de color en la vista árbol basadas
+                  en estado (rojo=cancelado, gris=oculto, amarillo=esperando, azul=borrador/enviado, 
+                  verde=compra, azul primario=hecho, negrita=incompleto). 2025.08.01
+                - Corrigiendo error leyenda: Se remueve banner HTML incompatible con vistas árbol y se 
+                  implementa leyenda de colores en el campo 'help' de la acción del menú. Se corrige
+                  error tipográfico 'postion' por 'position'. 2025.08.01
+                - Implementando leyenda efectiva: Se agrega leyenda de colores al nombre del menú con
+                  iconos principales y filtro informativo completo en la vista de búsqueda con todas
+                  las combinaciones de colores y sus significados. 2025.08.01
+                - Agregando campos de tiempo de procesamiento: Se agregan campos Fecha SdC, Días Diferidos
+                  y Horas Diferidas para analizar el tiempo entre solicitud y orden de compra. Incluye
+                  filtros para procesamiento rápido/demorado y agrupación por días diferidos. 2025.08.01
+                - Corrigiendo agrupación: Se modifica product_categ_id a store=True para permitir
+                  agrupación por categoría de producto. Se corrige error XML con carácter especial. 2025.08.01
+                - Implementando totales correctos: Se agregan campos price_subtotal_visible, price_total_visible
+                  y price_tax_visible que excluyen automáticamente las líneas con Hide=True de los totales
+                  de la vista árbol para cálculos precisos. 2025.08.01
+                - Reordenando campos precio: Se reordenan campos en secuencia subtotal, total, subtotalvisible,
+                  totalvisible y se hace configurable el campo subtotal original permitiendo ocultarlo/mostrarlo
+                  según necesidad del usuario en la vista de líneas de pedidos. 2025.08.02
                 
     """,
 
@@ -116,7 +146,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '2025.06.05 - 13:21',
+    'version': '2025.08.02 - 09:00',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',
