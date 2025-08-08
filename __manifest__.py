@@ -67,6 +67,18 @@
                 - Corrigiendo incidencia: Agregando funcionalidades: Agregar al "lineas de pedidos de compra":
                      - la cuenta analitica,
                      - analitico,
+                - CRÍTICO: Corrigiendo incidencia producción PR00851/PR00854: picking_type_id cambiando incorrectamente 
+                    durante aprobación de Solicitudes de Compra. Implementada solución integral: 2025.08.07
+                    - Separados triggers @api.onchange para evitar loops de sobreescritura
+                    - Agregado método de validación _validate_picking_type() 
+                    - Implementada lógica robusta _get_picking_type_for_warehouse() con fallbacks
+                    - Protegido método create_rfq_ethics() contra picking_type inconsistentes
+                    - Agregado logging detallado para trazabilidad y debugging
+                - AUDITORÍA: Agregando registro automático en chatter (bitácora) para cambios críticos en SDP: 2025.08.07
+                    - Tracking de cambios en Tipo de Operación (picking_type_id) con detalles de almacén
+                    - Tracking de cambios en Cuenta Analítica (account_analytic_id)
+                    - Mensajes informativos con usuario, valores anteriores/nuevos y timestamp
+                    - Integración completa con el sistema de mensajería de Odoo
                      - fase,
                      - vehiculo.
                      - Enlace a la SdP. 
@@ -136,6 +148,14 @@
                 - Reordenando campos precio: Se reordenan campos en secuencia subtotal, total, subtotalvisible,
                   totalvisible y se hace configurable el campo subtotal original permitiendo ocultarlo/mostrarlo
                   según necesidad del usuario en la vista de líneas de pedidos. 2025.08.02
+                -----------------------------------------------------------------------------------------
+                - Mejorando funcionalidad: Botón [Descartar] en Solicitud de Compra. 2025.08.06
+                    - Solo visible en estado "Confirmado" (to_approve)
+                    - Solo disponible para aprobadores (account.group_account_manager, purchase.group_purchase_manager)
+                    - Validación que impide descartar si hay SdP relacionadas en estado 'locked' o 'purchase'
+                    - Agregado estado 'descarted' a la barra de estado (statusbar)
+                    - Confirmación de seguridad antes de ejecutar la acción
+                    - Logging de auditoría para seguimiento de acciones
                 
     """,
 
@@ -146,7 +166,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '2025.08.02 - 09:00',
+    'version': '2025.08.07 - 19:00',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',

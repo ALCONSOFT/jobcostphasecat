@@ -1,0 +1,74 @@
+setUpClass (__main__.TestPurchaseRequestE2E) ... ERROR
+
+======================================================================
+ERROR: setUpClass (__main__.TestPurchaseRequestE2E)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/alconor/proyectos/030-gsak/dc_odoo16_alconsoft/addons_propios/jobcostphasecat/tests/e2e/test_purchase_request_selenium.py", line 76, in _login
+    WebDriverWait(cls.driver, 15).until(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        EC.presence_of_element_located((By.CSS_SELECTOR, ".o_main_navbar"))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/alconor/proyectos/030-gsak/dc_odoo16_alconsoft/addons_propios/jobcostphasecat/tests/test_env/lib/python3.13/site-packages/selenium/webdriver/support/wait.py", line 138, in until
+    raise TimeoutException(message, screen, stacktrace)
+selenium.common.exceptions.TimeoutException: Message: 
+Stacktrace:
+0   chromedriver                        0x0000000104b94b38 cxxbridge1$str$ptr + 2722088
+1   chromedriver                        0x0000000104b8caa8 cxxbridge1$str$ptr + 2689176
+2   chromedriver                        0x00000001046de33c cxxbridge1$string$len + 90648
+3   chromedriver                        0x0000000104725494 cxxbridge1$string$len + 381808
+4   chromedriver                        0x0000000104766880 cxxbridge1$string$len + 649052
+5   chromedriver                        0x0000000104719784 cxxbridge1$string$len + 333408
+6   chromedriver                        0x0000000104b57eb4 cxxbridge1$str$ptr + 2473124
+7   chromedriver                        0x0000000104b5b120 cxxbridge1$str$ptr + 2486032
+8   chromedriver                        0x0000000104b396b4 cxxbridge1$str$ptr + 2348196
+9   chromedriver                        0x0000000104b5b9dc cxxbridge1$str$ptr + 2488268
+10  chromedriver                        0x0000000104b2a730 cxxbridge1$str$ptr + 2286880
+11  chromedriver                        0x0000000104b7b5f8 cxxbridge1$str$ptr + 2618344
+12  chromedriver                        0x0000000104b7b784 cxxbridge1$str$ptr + 2618740
+13  chromedriver                        0x0000000104b8c6e4 cxxbridge1$str$ptr + 2688212
+14  libsystem_pthread.dylib             0x000000019868ac0c _pthread_start + 136
+15  libsystem_pthread.dylib             0x0000000198685b80 thread_start + 8
+
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/alconor/proyectos/030-gsak/dc_odoo16_alconsoft/addons_propios/jobcostphasecat/tests/e2e/test_purchase_request_selenium.py", line 48, in setUpClass
+    cls._login()
+    ~~~~~~~~~~^^
+  File "/Users/alconor/proyectos/030-gsak/dc_odoo16_alconsoft/addons_propios/jobcostphasecat/tests/e2e/test_purchase_request_selenium.py", line 81, in _login
+    raise Exception(f"Error durante login: {e}")
+Exception: Error durante login: Message: 
+Stacktrace:
+0   chromedriver                        0x0000000104b94b38 cxxbridge1$str$ptr + 2722088
+1   chromedriver                        0x0000000104b8caa8 cxxbridge1$str$ptr + 2689176
+2   chromedriver                        0x00000001046de33c cxxbridge1$string$len + 90648
+3   chromedriver                        0x0000000104725494 cxxbridge1$string$len + 381808
+4   chromedriver                        0x0000000104766880 cxxbridge1$string$len + 649052
+5   chromedriver                        0x0000000104719784 cxxbridge1$string$len + 333408
+6   chromedriver                        0x0000000104b57eb4 cxxbridge1$str$ptr + 2473124
+7   chromedriver                        0x0000000104b5b120 cxxbridge1$str$ptr + 2486032
+8   chromedriver                        0x0000000104b396b4 cxxbridge1$str$ptr + 2348196
+9   chromedriver                        0x0000000104b5b9dc cxxbridge1$str$ptr + 2488268
+10  chromedriver                        0x0000000104b2a730 cxxbridge1$str$ptr + 2286880
+11  chromedriver                        0x0000000104b7b5f8 cxxbridge1$str$ptr + 2618344
+12  chromedriver                        0x0000000104b7b784 cxxbridge1$str$ptr + 2618740
+13  chromedriver                        0x0000000104b8c6e4 cxxbridge1$str$ptr + 2688212
+14  libsystem_pthread.dylib             0x000000019868ac0c _pthread_start + 136
+15  libsystem_pthread.dylib             0x0000000198685b80 thread_start + 8
+
+
+----------------------------------------------------------------------
+Ran 0 tests in 27.264s
+
+FAILED (errors=1)
+🎯 Ejecutando Pruebas E2E para Purchase Request
+==================================================
+IMPORTANTE: Configurar las variables de conexión antes de ejecutar:
+- ODOO_URL: URL de tu instancia de Odoo
+- DATABASE: Nombre de tu base de datos
+- USERNAME/PASSWORD: Credenciales de acceso
+==================================================

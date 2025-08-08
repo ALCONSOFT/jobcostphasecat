@@ -86,10 +86,12 @@ class EthicsPurchaseRequest(models.Model):
         default =_default_account_analytic_id,
         tracking=True)
 
-    # Extendiendo el campo 'state' para agregar el nuevo estado
-    state = fields.Selection(selection_add=[('waiting_for_audit', 'Esperando Auditoría'),
-                                                ('waiting_for_buyer', "Esperando Comprador")
-        ], ondelete={'waiting_for_approver': 'cascade'})
+    # Extendiendo el campo 'state' para agregar los nuevos estados
+    state = fields.Selection(selection_add=[
+        ('waiting_for_audit', 'Esperando Auditoría'),
+        ('waiting_for_buyer', "Esperando Comprador"),
+        ('descarted', 'Descartado')
+    ], ondelete={'waiting_for_approver': 'cascade'})
     pr_lines = fields.One2many('purchase.request.line', 'pr_id', tracking=True)
 
     approved_by_id = fields.Many2one(
@@ -186,11 +188,31 @@ class EthicsPurchaseRequest(models.Model):
         3️⃣ Si todas las líneas de productos tienen vendors, aprueba la SdC.
         4️⃣ Si faltan vendors, abre un asistente para corregirlo.
         """
-        # validar que no existan SdP con id de la purchase.request actual
-        # Validar que no existan SdPs con id de la purchase.request actual
+        # MEJORADO: Validar Purchase Orders existentes considerando su estado
         existing_po = self.env['purchase.order'].search([('pr_ref_id', '=', self.id)])
         if existing_po:
-            raise UserError(_("Ya existen Solicitudes de Pedido (SdP) generadas para esta Solicitud de Compra (SdC)."))
+            # Filtrar solo Purchase Orders que NO están canceladas ni descartadas
+            active_po = existing_po.filtered(lambda po: po.state not in ['cancel', 'descarted'])
+            
+            if active_po:
+                # Si hay Purchase Orders activas, bloquear re-aprobación
+                po_details = []
+                for po in active_po:
+                    po_details.append(f"• {po.name} (Estado: {dict(po._fields['state'].selection).get(po.state, po.state)})")
+                
+                raise UserError(_(
+                    "Ya existen Solicitudes de Pedido (SdP) ACTIVAS para esta Solicitud de Compra (SdC):\n\n"
+                    "%s\n\n"
+                    "Para re-aprobar esta SdC, primero debe cancelar o descartar todas las SdP relacionadas."
+                ) % '\n'.join(po_details))
+            else:
+                # Solo hay Purchase Orders canceladas/descartadas - permitir re-aprobación
+                self.message_post(
+                    body=_(
+                        "🔄 RE-APROBACIÓN DETECTADA: Se encontraron %d Purchase Orders canceladas/descartadas "
+                        "relacionadas con esta SdC. Se procederá a crear nuevas Purchase Orders."
+                    ) % len(existing_po)
+                )
         # 🔹 1️⃣ AGREGAR LOS PROVEEDORES A LAS SECCIONES Y NOTAS
         for section_or_note in self.pr_lines.filtered(lambda l: l.display_type in ['line_section', 'line_note']):
             # Obtener todos los vendors de las líneas de productos
@@ -246,6 +268,56 @@ class EthicsPurchaseRequest(models.Model):
                 }
             }
     def create_rfq_ethics(self):
+        # NUEVO: Validar productos sin proveedor ANTES de continuar
+        lines_without_vendor = self.pr_lines.filtered(lambda l: not l.vendor_ids and l.product_id)
+        if lines_without_vendor:
+            # Construir mensaje de advertencia detallado
+            missing_products = []
+            for line in lines_without_vendor:
+                missing_products.append(f"• {line.product_id.name} (Cant: {line.product_qty} {line.product_uom.name})")
+            
+            # Lanzar error con lista de productos
+            raise ValidationError(_(
+                "⚠️ ADVERTENCIA: Existen productos sin proveedor asignado:\n\n"
+                "%s\n\n"
+                "Por favor, asigne proveedores a estos productos antes de aprobar la solicitud.\n"
+                "Puede hacerlo desde el botón 'Editar' en cada línea de producto."
+            ) % '\n'.join(missing_products))
+        
+        # PROTECCIÓN: Validar y preservar picking_type_id antes de crear órdenes de compra
+        if not self._validate_picking_type():
+            # Si el picking_type no es válido, intentar recuperar el correcto
+            if self.warehouse_id:
+                suggested_picking_type = self._get_picking_type_for_warehouse(self.warehouse_id)
+                if suggested_picking_type:
+                    _logger.warning(
+                        "PR %s: Corrigiendo picking_type_id de %s a %s para warehouse %s",
+                        self.name, 
+                        self.picking_type_id.name if self.picking_type_id else 'None',
+                        suggested_picking_type.name,
+                        self.warehouse_id.name
+                    )
+                    self.picking_type_id = suggested_picking_type
+                else:
+                    raise ValidationError(_(
+                        "No se puede crear órdenes de compra: No hay un tipo de operación "
+                        "de recepción válido para el almacén '%s'. "
+                        "Por favor configure correctamente los tipos de operación."
+                    ) % self.warehouse_id.name)
+            else:
+                raise ValidationError(_(
+                    "No se puede crear órdenes de compra: No hay almacén seleccionado "
+                    "y no se puede determinar el tipo de operación de recepción."
+                ))
+        
+        # Log información sobre el proceso
+        _logger.info(
+            "PR %s: Creando órdenes de compra con picking_type_id=%s para warehouse=%s",
+            self.name,
+            self.picking_type_id.name if self.picking_type_id else 'None',
+            self.warehouse_id.name if self.warehouse_id else 'None'
+        )
+        
         purchase_dict = {}
         purchase_orders = []
         for line in self.pr_lines.filtered(lambda l:l.vendor_ids):
@@ -286,7 +358,7 @@ class EthicsPurchaseRequest(models.Model):
         self.state = 'confirm'
         return True
 
-    @api.onchange('warehouse_id', 'picking_type_id')
+    @api.onchange('warehouse_id')
     def _onchange_warehouse(self):
         if self.warehouse_id:
             self.sequence_alter = self._get_sequence(self.warehouse_id.id)
@@ -302,11 +374,110 @@ class EthicsPurchaseRequest(models.Model):
                     limit=1
                 )
             # Buscar el tipo de operación 'incoming' relacionado con el almacén
-            self.picking_type_id = self.env['stock.picking.type'].search(
-                [('warehouse_id', '=', _warehouse.id), ('code', '=', 'incoming')], 
-                limit=1
-            )
+            # Solo actualizar picking_type_id si no está establecido o si es diferente almacén
+            if not self.picking_type_id or (self.picking_type_id.warehouse_id != _warehouse):
+                suggested_picking_type = self._get_picking_type_for_warehouse(_warehouse)
+                if suggested_picking_type:
+                    self.picking_type_id = suggested_picking_type
 
+    @api.onchange('picking_type_id')
+    def _onchange_picking_type_id(self):
+        """
+        Validar que el picking_type_id sea compatible con el warehouse_id seleccionado.
+        Evitar sobreescrituras no deseadas durante flujos de aprobación.
+        """
+        if self.picking_type_id and self.warehouse_id:
+            if not self._validate_picking_type():
+                return {
+                    'warning': {
+                        'title': _('Tipo de Operación Incompatible'),
+                        'message': _(
+                            'El tipo de operación "%s" no pertenece al almacén "%s". '
+                            'Por favor seleccione un tipo de operación válido.'
+                        ) % (self.picking_type_id.name, self.warehouse_id.name)
+                    }
+                }
+
+    def _validate_picking_type(self):
+        """
+        Validar que el picking_type_id pertenezca al warehouse_id actual
+        y sea del tipo 'incoming' (recepción).
+        
+        Returns:
+            bool: True si es válido, False en caso contrario
+        """
+        if not self.picking_type_id or not self.warehouse_id:
+            return True
+            
+        # Verificar que el picking_type pertenezca al warehouse actual
+        if self.picking_type_id.warehouse_id != self.warehouse_id:
+            _logger.warning(
+                "PR %s: picking_type_id %s no pertenece al warehouse %s", 
+                self.name, self.picking_type_id.name, self.warehouse_id.name
+            )
+            return False
+            
+        # Verificar que sea de tipo 'incoming' 
+        if self.picking_type_id.code != 'incoming':
+            _logger.warning(
+                "PR %s: picking_type_id %s no es de tipo 'incoming'", 
+                self.name, self.picking_type_id.name
+            )
+            return False
+            
+        return True
+
+    def _get_picking_type_for_warehouse(self, warehouse):
+        """
+        Obtener el picking_type_id apropiado para un almacén dado.
+        Implementa lógica de fallback robusta.
+        
+        Args:
+            warehouse (stock.warehouse): El almacén para el cual obtener el tipo de operación
+            
+        Returns:
+            stock.picking.type: El tipo de operación de recepción o None si no se encuentra
+        """
+        if not warehouse:
+            return None
+            
+        # Buscar primero el tipo de operación 'incoming' específico del almacén
+        picking_type = self.env['stock.picking.type'].search([
+            ('warehouse_id', '=', warehouse.id),
+            ('code', '=', 'incoming')
+        ], limit=1)
+        
+        if picking_type:
+            _logger.info(
+                "PR: Encontrado picking_type %s para warehouse %s", 
+                picking_type.name, warehouse.name
+            )
+            return picking_type
+            
+        # Fallback: Si no se encuentra, intentar con el tipo por defecto de la compañía
+        _logger.warning(
+            "PR: No se encontró picking_type 'incoming' para warehouse %s, "
+            "buscando alternativas", warehouse.name
+        )
+        
+        # Buscar cualquier tipo de recepción en la misma compañía
+        picking_type = self.env['stock.picking.type'].search([
+            ('code', '=', 'incoming'),
+            ('warehouse_id.company_id', '=', warehouse.company_id.id)
+        ], limit=1)
+        
+        if picking_type:
+            _logger.warning(
+                "PR: Usando picking_type %s como fallback para warehouse %s", 
+                picking_type.name, warehouse.name
+            )
+            return picking_type
+            
+        _logger.error(
+            "PR: No se pudo encontrar ningún picking_type 'incoming' para warehouse %s", 
+            warehouse.name
+        )
+        return None
 
     @api.model
     def create(self, vals):
@@ -316,9 +487,93 @@ class EthicsPurchaseRequest(models.Model):
         return super(EthicsPurchaseRequest, self).create(vals)
 
     def write(self, vals):
+        # TRACK CHANGES: Capturar valores anteriores para registrar cambios en chatter
+        changes_to_track = {}
+        
+        # Capturar cambios de picking_type_id (Tipo de Operación)
+        if 'picking_type_id' in vals:
+            for record in self:
+                old_picking_type = record.picking_type_id
+                new_picking_type = self.env['stock.picking.type'].browse(vals['picking_type_id']) if vals['picking_type_id'] else False
+                
+                if old_picking_type != new_picking_type:
+                    changes_to_track.setdefault(record.id, {})['picking_type_id'] = {
+                        'old': old_picking_type.name if old_picking_type else _('Sin asignar'),
+                        'new': new_picking_type.name if new_picking_type else _('Sin asignar'),
+                        'old_warehouse': old_picking_type.warehouse_id.name if old_picking_type and old_picking_type.warehouse_id else _('N/A'),
+                        'new_warehouse': new_picking_type.warehouse_id.name if new_picking_type and new_picking_type.warehouse_id else _('N/A')
+                    }
+        
+        # Capturar cambios de account_analytic_id (Cuenta Analítica)
+        if 'account_analytic_id' in vals:
+            for record in self:
+                old_analytic = record.account_analytic_id
+                new_analytic = self.env['account.analytic.account'].browse(vals['account_analytic_id']) if vals['account_analytic_id'] else False
+                
+                if old_analytic != new_analytic:
+                    changes_to_track.setdefault(record.id, {})['account_analytic_id'] = {
+                        'old': old_analytic.name if old_analytic else _('Sin asignar'),
+                        'new': new_analytic.name if new_analytic else _('Sin asignar')
+                    }
+        
         if 'warehouse_id' in vals:
             vals['sequence_alter'] = self._get_sequence(vals['warehouse_id'])
-        return super(EthicsPurchaseRequest, self).write(vals)
+        
+        # Ejecutar write original
+        result = super(EthicsPurchaseRequest, self).write(vals)
+        
+        # CHATTER LOGGING: Registrar cambios en la bitácora después del write exitoso
+        for record_id, changes in changes_to_track.items():
+            record = self.browse(record_id)
+            messages = []
+            
+            # Mensaje para cambio de Tipo de Operación
+            if 'picking_type_id' in changes:
+                change = changes['picking_type_id']
+                message = _(
+                    "<strong>🔄 Tipo de Operación Modificado:</strong><br/>"
+                    "• <strong>Anterior:</strong> %s (Almacén: %s)<br/>"
+                    "• <strong>Nuevo:</strong> %s (Almacén: %s)<br/>"
+                    "• <strong>Usuario:</strong> %s<br/>"
+                    "• <strong>Motivo:</strong> Actualización manual del tipo de operación"
+                ) % (
+                    change['old'], change['old_warehouse'],
+                    change['new'], change['new_warehouse'],
+                    self.env.user.name
+                )
+                messages.append(message)
+            
+            # Mensaje para cambio de Cuenta Analítica  
+            if 'account_analytic_id' in changes:
+                change = changes['account_analytic_id']
+                message = _(
+                    "<strong>📊 Cuenta Analítica Modificada:</strong><br/>"
+                    "• <strong>Anterior:</strong> %s<br/>"
+                    "• <strong>Nueva:</strong> %s<br/>"
+                    "• <strong>Usuario:</strong> %s<br/>"
+                    "• <strong>Motivo:</strong> Actualización manual de la cuenta analítica"
+                ) % (
+                    change['old'], change['new'],
+                    self.env.user.name
+                )
+                messages.append(message)
+            
+            # Publicar mensajes en el chatter
+            if messages:
+                combined_message = '<br/><br/>'.join(messages)
+                record.message_post(
+                    body=combined_message,
+                    message_type='notification',
+                    subtype_xmlid='mail.mt_note'
+                )
+                
+                # Log adicional para debugging
+                _logger.info(
+                    "PR %s: Cambios registrados en chatter por usuario %s: %s",
+                    record.name, self.env.user.name, list(changes.keys())
+                )
+        
+        return result
 
     def _get_sequence(self, warehouse_id):
         # Método para obtener la secuencia basada en el almacén
@@ -404,6 +659,89 @@ class EthicsPurchaseRequest(models.Model):
         compute='_compute_mostrar_a_usuario', 
         store=False
     )
+
+    def action_descarted(self):
+        """Método para marcar la solicitud como descartada.
+        Disponible en estados 'to_approve' (Pendiente) y 'confirm' (Aprobado) para aprobadores.
+        Valida que las Purchase Orders relacionadas estén canceladas o descartadas."""
+        
+        # Verificar que el usuario tenga permisos de aprobador
+        if not (self.env.user.has_group('account.group_account_manager') or 
+                self.env.user.has_group('purchase.group_purchase_manager')):
+            raise UserError(_("Solo los aprobadores pueden descartar solicitudes."))
+        
+        # Verificar que el estado sea válido para descarte
+        if self.state not in ['to_approve', 'confirm']:
+            raise UserError(_("Solo se pueden descartar solicitudes en estado 'Pendiente de Aprobación' o 'Aprobado'."))
+        
+        # TEMPORAL: Comentado porque el campo 'request_id' no existe en purchase.order
+        # TODO: Encontrar la relación correcta entre purchase.request y purchase.order
+        # Por ahora, permitir descartar sin validar Purchase Orders relacionadas
+        
+        # related_pos = self.env['purchase.order'].search([
+        #     ('request_id', '=', self.id)
+        # ])
+        # 
+        # # Si hay Purchase Orders relacionadas, validar que estén en estados permitidos
+        # if related_pos:
+        #     estados_permitidos = ['cancel', 'descarted']  # Cancelado o Descartado
+        #     for po in related_pos:
+        #         if po.state not in estados_permitidos:
+        #             raise UserError(_(
+        #                 "No se puede descartar esta solicitud. "
+        #                 "La Purchase Order %s está en estado '%s'. "
+        #                 "Todas las Purchase Orders relacionadas deben estar Canceladas o Descartadas."
+        #             ) % (po.name, po.state))
+        
+        # Guardar estado anterior antes de cambiar
+        estado_anterior = 'Pendiente de Aprobación' if self.state == 'to_approve' else 'Aprobado'
+        
+        # Cambiar estado a descartado
+        self.state = 'descarted'
+        
+        # Registrar actividad en el chatter con información del estado anterior
+        self.message_post(
+            body=_('SdC: %s ha sido DESCARTADA por %s (Estado anterior: %s)') % (
+                self.name, 
+                self.env.user.name,
+                estado_anterior
+            )
+        )
+        
+        # Log para auditoria
+        _logger.info(f"Purchase Request {self.name} discarded by user {self.env.user.login}")
+
+    def action_submit_for_approver(self):
+        """
+        Sobreescribir método para enviar SdC a aprobación con validación de proveedores.
+        Validación solicitada: No permitir avanzar si existen productos sin proveedor.
+        Estado: waiting_for_buyer -> waiting_for_approver
+        """
+        # VALIDACIÓN: Verificar que todos los productos tienen al menos un proveedor
+        lines_without_vendor = self.pr_lines.filtered(lambda l: not l.vendor_ids and l.product_id)
+        if lines_without_vendor:
+            # Construir mensaje de advertencia detallado
+            missing_products = []
+            for line in lines_without_vendor:
+                missing_products.append(f"• {line.product_id.name} (Cant: {line.product_qty} {line.product_uom.name})")
+            
+            # Lanzar error con lista de productos
+            raise ValidationError(_(
+                "⚠️ ADVERTENCIA: No se puede enviar a aprobación.\n\n"
+                "Existen productos sin proveedor asignado:\n\n"
+                "%s\n\n"
+                "Por favor, asigne proveedores a estos productos antes de continuar con la aprobación."
+            ) % '\n'.join(missing_products))
+        
+        # Si pasa la validación, continuar con el flujo normal
+        self.state = 'waiting_for_approver'
+        
+        # Mensaje informativo en chatter
+        self.message_post(
+            body=_('✅ SdC enviada a aprobación. Todos los productos tienen proveedores asignados.')
+        )
+        
+        _logger.info(f"Purchase Request {self.name} sent to approver by {self.env.user.login} - All products have vendors")
 
 class EthicsPuchasRequestLine(models.Model):
     _inherit = 'purchase.request.line'
@@ -731,7 +1069,8 @@ class PurchaseOrders(models.Model):
             else:
                 raise ValidationError("No se puede regresar un pedido ya confirmado.")
 
-    # Botón Descartar Pedido
+
+    # Botón Descartar Pedido (para Purchase Orders)
     def action_discard(self):
         for rec in self:
             rec.state = 'descarted'

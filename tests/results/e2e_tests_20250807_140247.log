@@ -1,0 +1,61 @@
+setUpClass (__main__.TestPurchaseRequestE2E) ... ERROR
+
+======================================================================
+ERROR: setUpClass (__main__.TestPurchaseRequestE2E)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/alconor/proyectos/030-gsak/dc_odoo16_alconsoft/addons_propios/jobcostphasecat/tests/e2e/test_purchase_request_selenium.py", line 48, in setUpClass
+    cls._login()
+    ~~~~~~~~~~^^
+  File "/Users/alconor/proyectos/030-gsak/dc_odoo16_alconsoft/addons_propios/jobcostphasecat/tests/e2e/test_purchase_request_selenium.py", line 53, in _login
+    cls.driver.get(cls.ODOO_URL)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/Users/alconor/proyectos/030-gsak/dc_odoo16_alconsoft/addons_propios/jobcostphasecat/tests/test_env/lib/python3.13/site-packages/selenium/webdriver/remote/webdriver.py", line 479, in get
+    self.execute(Command.GET, {"url": url})
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alconor/proyectos/030-gsak/dc_odoo16_alconsoft/addons_propios/jobcostphasecat/tests/test_env/lib/python3.13/site-packages/selenium/webdriver/remote/webdriver.py", line 454, in execute
+    self.error_handler.check_response(response)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "/Users/alconor/proyectos/030-gsak/dc_odoo16_alconsoft/addons_propios/jobcostphasecat/tests/test_env/lib/python3.13/site-packages/selenium/webdriver/remote/errorhandler.py", line 232, in check_response
+    raise exception_class(message, screen, stacktrace)
+selenium.common.exceptions.WebDriverException: Message: unknown error: net::ERR_CONNECTION_REFUSED
+  (Session info: chrome=138.0.7204.184)
+Stacktrace:
+0   chromedriver                        0x0000000102df4b38 cxxbridge1$str$ptr + 2722088
+1   chromedriver                        0x0000000102decaa8 cxxbridge1$str$ptr + 2689176
+2   chromedriver                        0x000000010293e33c cxxbridge1$string$len + 90648
+3   chromedriver                        0x0000000102936380 cxxbridge1$string$len + 57948
+4   chromedriver                        0x00000001029293d4 cxxbridge1$string$len + 4784
+5   chromedriver                        0x000000010292add8 cxxbridge1$string$len + 11444
+6   chromedriver                        0x0000000102929828 cxxbridge1$string$len + 5892
+7   chromedriver                        0x000000010292917c cxxbridge1$string$len + 4184
+8   chromedriver                        0x0000000102928ec8 cxxbridge1$string$len + 3492
+9   chromedriver                        0x0000000102926c80 chromedriver + 191616
+10  chromedriver                        0x00000001029276dc chromedriver + 194268
+11  chromedriver                        0x00000001029413a0 cxxbridge1$string$len + 103036
+12  chromedriver                        0x00000001029c7308 cxxbridge1$string$len + 651748
+13  chromedriver                        0x00000001029c6880 cxxbridge1$string$len + 649052
+14  chromedriver                        0x0000000102979784 cxxbridge1$string$len + 333408
+15  chromedriver                        0x0000000102db7eb4 cxxbridge1$str$ptr + 2473124
+16  chromedriver                        0x0000000102dbb120 cxxbridge1$str$ptr + 2486032
+17  chromedriver                        0x0000000102d996b4 cxxbridge1$str$ptr + 2348196
+18  chromedriver                        0x0000000102dbb9dc cxxbridge1$str$ptr + 2488268
+19  chromedriver                        0x0000000102d8a730 cxxbridge1$str$ptr + 2286880
+20  chromedriver                        0x0000000102ddb5f8 cxxbridge1$str$ptr + 2618344
+21  chromedriver                        0x0000000102ddb784 cxxbridge1$str$ptr + 2618740
+22  chromedriver                        0x0000000102dec6e4 cxxbridge1$str$ptr + 2688212
+23  libsystem_pthread.dylib             0x000000019868ac0c _pthread_start + 136
+24  libsystem_pthread.dylib             0x0000000198685b80 thread_start + 8
+
+
+----------------------------------------------------------------------
+Ran 0 tests in 0.656s
+
+FAILED (errors=1)
+🎯 Ejecutando Pruebas E2E para Purchase Request
+==================================================
+IMPORTANTE: Configurar las variables de conexión antes de ejecutar:
+- ODOO_URL: URL de tu instancia de Odoo
+- DATABASE: Nombre de tu base de datos
+- USERNAME/PASSWORD: Credenciales de acceso
+==================================================
