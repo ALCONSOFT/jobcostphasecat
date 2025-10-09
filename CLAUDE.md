@@ -88,3 +88,133 @@ The module uses PostgreSQL on port 32030 with database `p16_TSI_2`.
 ## Testing
 
 No specific test framework is configured - verify functionality through the Odoo web interface after module updates.
+
+---
+
+## 🔔 PROTOCOLO OBLIGATORIO - Sistema de Bitácoras
+
+### Recordatorios Automáticos para Claude Code
+
+**Al INICIO de cada sesión, Claude Code DEBE:**
+
+1. ✅ Verificar si existe `.sessions/YYYY-MM-DD.md` del día actual
+2. ✅ Si NO existe, preguntar al usuario:
+   ```
+   ⚠️ No he detectado bitácora de hoy (.sessions/2025-10-09.md)
+   ¿Quieres que la cree con una plantilla base? (y/n)
+   ```
+3. ✅ Si existe, leerla para entender el contexto de la sesión actual
+
+**Durante la sesión:**
+
+- Mantener registro mental de cambios importantes
+- Sugerir actualizar la bitácora después de cambios significativos
+
+**Al FINALIZAR la sesión, Claude Code DEBE recordar:**
+
+1. ✅ Actualizar `.sessions/YYYY-MM-DD.md` con:
+   - Cambios realizados
+   - Decisiones técnicas tomadas
+   - Archivos modificados
+   - Pendientes para próxima sesión
+
+2. ✅ Actualizar `ENVIRONMENT_STATUS.md` si hubo deploy a algún ambiente
+
+3. ✅ Preguntar:
+   ```
+   📝 ¿Deseas que actualice la bitácora con el resumen de la sesión? (y/n)
+   ```
+
+### Sistema de Archivos de Seguimiento
+
+#### `.sessions/YYYY-MM-DD.md` - Bitácora Diaria
+- Registro de actividades del día
+- Decisiones técnicas tomadas
+- Cambios realizados en código
+- Pendientes y próximos pasos
+- Contexto importante para futuras sesiones
+
+#### `ENVIRONMENT_STATUS.md` - Estado de Ambientes
+- Estado actual de desarrollo, pruebas y producción
+- Último commit deployado en cada ambiente
+- Issues conocidos por ambiente
+- Historial de deploys
+
+### Git Hook Pre-Commit
+
+El sistema tiene un git hook que RECORDARÁ al usuario actualizar la bitácora antes de cada commit.
+
+**Comportamiento del hook:**
+- ✅ Verifica existencia de `.sessions/YYYY-MM-DD.md`
+- ✅ Verifica si fue actualizada hoy
+- ⚠️ Pregunta al usuario si desea continuar sin bitácora actualizada
+- ❌ Permite cancelar el commit para actualizar primero
+
+### Plantilla de Bitácora
+
+```markdown
+# YYYY-MM-DD - Título de la Sesión
+
+## 🎯 Objetivo de la Sesión
+[Describe qué se planea hacer]
+
+## ✅ Cambios Realizados
+- Cambio 1
+- Cambio 2
+
+## 🔍 Decisiones Técnicas
+- Decisión 1: Razón
+- Decisión 2: Razón
+
+## 📋 Pendiente
+- [ ] Tarea pendiente 1
+- [ ] Tarea pendiente 2
+
+## 🔄 Archivos Modificados
+- archivo1.py (descripción)
+- archivo2.xml (descripción)
+
+## 💡 Contexto para Claude Code
+[Información importante que Claude debe recordar en próximas sesiones]
+```
+
+### Flujo de Trabajo Recomendado
+
+```
+1. Inicio de sesión
+   ↓
+2. Claude Code verifica bitácora del día
+   ↓
+3. Trabajo de desarrollo
+   ↓
+4. Actualización periódica de bitácora
+   ↓
+5. Al hacer commit: Git hook verifica bitácora
+   ↓
+6. Al finalizar: Claude sugiere actualizar resumen
+   ↓
+7. (Opcional) Actualizar ENVIRONMENT_STATUS.md si hubo deploy
+```
+
+### Beneficios del Sistema
+
+- 📝 **Trazabilidad completa** de cambios y decisiones
+- 🔄 **Continuidad** entre sesiones de desarrollo
+- 🤖 **Claude Code informado** del contexto actual
+- 🎯 **Seguimiento** de pendientes y próximos pasos
+- 📊 **Visibilidad** del estado de cada ambiente
+
+### Comandos Útiles
+
+```bash
+# Crear bitácora del día manualmente
+cp .sessions/2025-10-09.md .sessions/$(date +%Y-%m-%d).md
+
+# Ver última bitácora
+ls -lt .sessions/ | head -2
+
+# Verificar estado de ambientes
+cat ENVIRONMENT_STATUS.md
+```
+
+---
