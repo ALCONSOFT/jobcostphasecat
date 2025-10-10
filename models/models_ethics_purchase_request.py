@@ -662,26 +662,26 @@ class EthicsPurchaseRequest(models.Model):
 
     def action_descarted(self):
         """Método para marcar la solicitud como descartada.
-        Disponible en estados 'to_approve' (Pendiente) y 'confirm' (Aprobado) para aprobadores.
+        Disponible en estados 'draft' (Borrador), 'waiting_for_approver' (Pendiente) y 'confirm' (Aprobado).
+        Solo para usuarios con permiso específico de Descartador de SdC.
         Valida que las Purchase Orders relacionadas estén canceladas o descartadas."""
-        
-        # Verificar que el usuario tenga permisos de aprobador
-        if not (self.env.user.has_group('account.group_account_manager') or 
-                self.env.user.has_group('purchase.group_purchase_manager')):
-            raise UserError(_("Solo los aprobadores pueden descartar solicitudes."))
-        
+
+        # Verificar que el usuario tenga permisos de Descartador
+        if not self.env.user.has_group('jobcostphasecat.group_request_discarder'):
+            raise UserError(_("Solo los usuarios con permiso 'Descartador de SdC' pueden descartar solicitudes. Contacte con Auditoría, Compras o Contabilidad."))
+
         # Verificar que el estado sea válido para descarte
-        if self.state not in ['to_approve', 'confirm']:
-            raise UserError(_("Solo se pueden descartar solicitudes en estado 'Pendiente de Aprobación' o 'Aprobado'."))
-        
+        if self.state not in ['draft', 'waiting_for_approver', 'confirm']:
+            raise UserError(_("Solo se pueden descartar solicitudes en estado 'Borrador', 'Pendiente de Aprobación' o 'Aprobado'."))
+
         # TEMPORAL: Comentado porque el campo 'request_id' no existe en purchase.order
         # TODO: Encontrar la relación correcta entre purchase.request y purchase.order
         # Por ahora, permitir descartar sin validar Purchase Orders relacionadas
-        
+
         # related_pos = self.env['purchase.order'].search([
         #     ('request_id', '=', self.id)
         # ])
-        # 
+        #
         # # Si hay Purchase Orders relacionadas, validar que estén en estados permitidos
         # if related_pos:
         #     estados_permitidos = ['cancel', 'descarted']  # Cancelado o Descartado
@@ -692,24 +692,29 @@ class EthicsPurchaseRequest(models.Model):
         #                 "La Purchase Order %s está en estado '%s'. "
         #                 "Todas las Purchase Orders relacionadas deben estar Canceladas o Descartadas."
         #             ) % (po.name, po.state))
-        
-        # Guardar estado anterior antes de cambiar
-        estado_anterior = 'Pendiente de Aprobación' if self.state == 'to_approve' else 'Aprobado'
-        
+
+        # Guardar estado anterior antes de cambiar (con soporte para draft)
+        estados_nombres = {
+            'draft': 'Borrador',
+            'waiting_for_approver': 'Pendiente de Aprobación',
+            'confirm': 'Aprobado'
+        }
+        estado_anterior = estados_nombres.get(self.state, self.state)
+
         # Cambiar estado a descartado
         self.state = 'descarted'
-        
+
         # Registrar actividad en el chatter con información del estado anterior
         self.message_post(
-            body=_('SdC: %s ha sido DESCARTADA por %s (Estado anterior: %s)') % (
-                self.name, 
+            body=_('🗑️ SdC: %s ha sido DESCARTADA por %s (Estado anterior: %s)') % (
+                self.name,
                 self.env.user.name,
                 estado_anterior
             )
         )
-        
+
         # Log para auditoria
-        _logger.info(f"Purchase Request {self.name} discarded by user {self.env.user.login}")
+        _logger.info(f"Purchase Request {self.name} discarded by user {self.env.user.login} from state {self.state}")
 
     def action_submit_for_approver(self):
         """

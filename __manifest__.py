@@ -156,7 +156,34 @@
                     - Agregado estado 'descarted' a la barra de estado (statusbar)
                     - Confirmación de seguridad antes de ejecutar la acción
                     - Logging de auditoría para seguimiento de acciones
-                
+                -----------------------------------------------------------------------------------------
+                - IMPLEMENTACIÓN OPCIÓN 3: Grupo de Seguridad Exclusivo para Descarte en Borrador. 2025.10.09
+                    [CONTEXTO] Cliente Trebol Services reportó 23 solicitudes de prueba en estado draft sin poder descartar
+                    [SOLUCIÓN] Creación de grupo de seguridad específico "Descartador@ de SdC"
+
+                    A. Nuevo Grupo de Seguridad (security/security_view.xml):
+                       - Grupo: jobcostphasecat.group_request_discarder
+                       - Nombre: "Descartador@ de SdC"
+                       - Alcance: Solo para Auditoría, Compras y Contabilidad
+                       - Comentario: "Permite descartar Solicitudes de Compra en cualquier estado, incluyendo Borrador"
+
+                    B. Modificación método action_descarted() (models/models_ethics_purchase_request.py:663-717):
+                       - Validación explícita: Solo usuarios con grupo 'jobcostphasecat.group_request_discarder'
+                       - Estados permitidos: ['draft', 'to_approve', 'confirm']
+                       - Error descriptivo si usuario no tiene permisos
+                       - Registro en chatter con emoji 🗑️ y estado anterior
+                       - Logging de auditoría con usuario y timestamp
+                       - Mapeo de estados a nombres en español (Borrador, Pendiente, Aprobado)
+
+                    C. Actualización Vista XML (views/views_ethics_purchase_request.xml:114):
+                       - ANTES: groups="account.group_account_manager,purchase.group_purchase_manager"
+                       - DESPUÉS: groups="jobcostphasecat.group_request_discarder"
+                       - Visibilidad: draft, to_approve, confirm
+                       - Confirmación de seguridad antes de ejecutar
+
+                    [IMPACTO] Garantiza que solo usuarios autorizados puedan descartar en cualquier estado
+                    [DECISIÓN] Rechazadas Opción 1 (todos los usuarios) y Opción 2 (mantener grupos genéricos)
+
     """,
 
     'author': "Alconsoft",
@@ -166,7 +193,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '2025.08.07 - 19:00',
+    'version': '2025.10.09 - 18:00',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',

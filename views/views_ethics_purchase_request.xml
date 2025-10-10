@@ -106,13 +106,13 @@
                 <button name="%(jobcostphasecat.action_report_purchase_request)d" string="Imprimir Solicitud de Compra" type="action" class="btn-primary"/>
                 <button name="action_open_vehicle_selection" string="Listar Vehículos" type="object" class="btn-secondary"/>                
             </xpath>
-            <!-- Agregar el botón Descartar - Disponible en estados 'to_approve' y 'confirm' para aprobadores -->
+            <!-- Agregar el botón Descartar - Disponible en estados 'draft', 'waiting_for_approver' y 'confirm' para aprobadores -->
             <xpath expr="//header" position="inside">
-                <button name="action_descarted" 
-                        string="Descartar" 
-                        type="object" 
-                        groups="account.group_account_manager,purchase.group_purchase_manager"
-                        attrs="{'invisible': [('state', 'not in', ['to_approve', 'confirm'])]}"
+                <button name="action_descarted"
+                        string="Descartar"
+                        type="object"
+                        groups="jobcostphasecat.group_request_discarder"
+                        attrs="{'invisible': [('state', 'not in', ['draft', 'waiting_for_approver', 'confirm'])]}"
                         confirm="¿Está seguro de que desea descartar esta solicitud de compra? Esta acción no se puede deshacer."
                         class="btn-danger"/>
             </xpath>
