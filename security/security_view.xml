@@ -33,6 +33,12 @@
             <field name="implied_ids" eval="[(4, ref('jobcostphasecat.group_request_buyer'))]"/>
             <field name="users" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
         </record>
+        <!-- Descartador de SdC (Permite descartar en cualquier estado incluyendo Borrador) -->
+        <record id="group_request_discarder" model="res.groups">
+            <field name="name">Descartador@ de SdC</field>
+            <field name="category_id" ref="ethics_purchase_request.module_category_request"/>
+            <field name="comment">Permite descartar Solicitudes de Compra en cualquier estado, incluyendo Borrador. Solo para Auditoría, Compras y Contabilidad.</field>
+        </record>
         <!-- ***********************************************-->
         <!-- Categorias de Aprobación de Compras por Almacén-->
         <!-- ***********************************************-->        
