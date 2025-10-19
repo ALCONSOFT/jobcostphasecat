@@ -183,6 +183,50 @@
 
                     [IMPACTO] Garantiza que solo usuarios autorizados puedan descartar en cualquier estado
                     [DECISIÓN] Rechazadas Opción 1 (todos los usuarios) y Opción 2 (mantener grupos genéricos)
+                -----------------------------------------------------------------------------------------
+                - IMPLEMENTACIÓN: Control de Stock Negativo Configurable. 2025.10.10
+                    [CONTEXTO] Necesidad de controlar salidas de inventario con stock en cero o negativo
+                    [SOLUCIÓN] Sistema configurable por almacén y usuario desde Inventario → Configuración
+
+                    A. Modelo de Configuración (models/models_resconfigsettings.py):
+                       - Campo: enable_negative_stock_control (Boolean)
+                         Habilita/deshabilita el control de stock negativo en salidas
+                       - Campo: allowed_negative_stock_warehouse_ids (Many2many → stock.warehouse)
+                         Almacenes que PUEDEN tener stock negativo (excepciones)
+                       - Campo: allowed_negative_stock_user_ids (Many2many → res.users)
+                         Usuarios que PUEDEN hacer salidas sin validación de stock (excepciones)
+
+                    B. Vista de Configuración (views/res_config_settings_views.xml):
+                       - Ubicación: Inventario → Configuración → Ajustes
+                       - Sección nueva: "Control de Stock Negativo"
+                       - Toggle principal con campos condicionales (visible solo si control habilitado)
+                       - Widget many2many_tags para selección de almacenes y usuarios
+                       - Textos descriptivos en español para guiar al usuario
+
+                    C. Lógica de Validación (models/models_stock_picking.py:button_validate):
+                       - Override del método button_validate() en ZZ_StockPicking
+                       - Solo aplica a transferencias de SALIDA (picking_type_id.code == 'outgoing')
+                       - Excepciones (NO valida stock si):
+                         * Control está deshabilitado → Comportamiento Odoo estándar
+                         * Almacén está en lista de permitidos → Permite stock negativo
+                         * Usuario está en lista de autorizados → Permite sin validación
+                       - Validación (solo si NO se cumple ninguna excepción):
+                         * Obtiene stock disponible REAL (allow_negative=True)
+                         * Compara quantity_done vs available_qty
+                         * Si quantity_done > available_qty → ValidationError con detalles
+                       - Mensaje de error incluye:
+                         * Producto, ubicación, cantidades (disponible, solicitado, faltante)
+                         * Nota sobre autorización necesaria
+
+                    D. Comportamiento del Sistema:
+                       - Control OFF: Odoo permite stock negativo (comportamiento estándar)
+                       - Control ON + Almacén permitido: Permite stock negativo para ese almacén
+                       - Control ON + Usuario autorizado: Usuario puede hacer salidas sin restricción
+                       - Control ON + Ninguna excepción: Bloquea si stock insuficiente
+
+                    [IMPACTO] Control total sobre stock negativo sin modificar funcionalidad core de Odoo
+                    [VENTAJAS] Configurable desde UI, auditable, reversible, sin impacto en rendimiento
+                    [TESTING] Pendiente: Actualizar módulo y validar en desarrollo/producción
 
     """,
 
@@ -193,7 +237,7 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '2025.10.09 - 18:00',
+    'version': '2025.10.10 - 21:00',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',

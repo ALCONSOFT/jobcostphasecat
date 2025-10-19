@@ -98,4 +98,70 @@
       </xpath>
     </field>
   </record>
+
+  <!-- Vista de configuración para Control de Stock Negativo en Inventario -->
+  <record id="res_config_settings_view_form_inherit_stock_negative" model="ir.ui.view">
+    <field name="name">res.config.settings.view.form.inherit.stock.negative</field>
+    <field name="model">res.config.settings</field>
+    <field name="inherit_id" ref="stock.res_config_settings_view_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//div[@data-key='stock']" position="inside">
+        <!-- Grupo de Control de Stock Negativo -->
+        <div class="o_setting_group">
+          <h2>Control de Stock Negativo</h2>
+          <div class="row mt16 o_settings_container">
+
+            <!-- Toggle principal: Habilitar control -->
+            <div class="col-12 col-lg-6 o_setting_box" id="negative_stock_control">
+              <div class="o_setting_left_pane">
+                <field name="enable_negative_stock_control"/>
+              </div>
+              <div class="o_setting_right_pane">
+                <label for="enable_negative_stock_control"/>
+                <div class="text-muted">
+                  Controla las salidas de inventario cuando no hay existencias disponibles
+                </div>
+              </div>
+            </div>
+
+            <!-- Almacenes permitidos (visible solo si control habilitado) -->
+            <div class="col-12 o_setting_box"
+                 attrs="{'invisible': [('enable_negative_stock_control', '=', False)]}">
+              <div class="o_setting_right_pane">
+                <label for="allowed_negative_stock_warehouse_ids"
+                       string="Almacenes con Stock Negativo Permitido"/>
+                <div class="text-muted mb-3">
+                  Selecciona los almacenes que PUEDEN tener stock negativo.
+                  Las salidas en estos almacenes NO serán bloqueadas por falta de existencias.
+                </div>
+                <field name="allowed_negative_stock_warehouse_ids"
+                       widget="many2many_tags"
+                       placeholder="Seleccionar almacenes..."
+                       options="{'no_create': True}"/>
+              </div>
+            </div>
+
+            <!-- Usuarios autorizados (visible solo si control habilitado) -->
+            <div class="col-12 o_setting_box"
+                 attrs="{'invisible': [('enable_negative_stock_control', '=', False)]}">
+              <div class="o_setting_right_pane">
+                <label for="allowed_negative_stock_user_ids"
+                       string="Usuarios Autorizados para Salidas sin Stock"/>
+                <div class="text-muted mb-3">
+                  Selecciona los usuarios que PUEDEN hacer salidas aunque no haya existencias.
+                  Estos usuarios NO recibirán error de validación por stock insuficiente.
+                </div>
+                <field name="allowed_negative_stock_user_ids"
+                       widget="many2many_tags"
+                       placeholder="Seleccionar usuarios..."
+                       options="{'no_create': True}"/>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </xpath>
+    </field>
+  </record>
+
 </odoo>

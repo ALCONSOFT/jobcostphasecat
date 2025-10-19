@@ -110,6 +110,179 @@ class ZZ_StockPicking(models.Model):
     # NOTA: El método copy() ahora está en models_stock_picking_override.py
     # para tener prioridad sobre ac_sync_odoo_odoo
 
+    # Alconor: 10-oct-2025: Control de Stock Negativo Configurable
+    def action_assign(self):
+        """
+        Override del método action_assign (Comprobar Disponibilidad) para controlar stock negativo.
+
+        Este método se ejecuta ANTES de reservar stock, mostrando al usuario
+        si hay problemas de disponibilidad ANTES de ingresar cantidades.
+
+        Permite configurar:
+        - Control habilitado/deshabilitado
+        - Almacenes que PUEDEN tener stock negativo
+        - Usuarios que PUEDEN hacer salidas sin restricción
+
+        Solo valida en transferencias de SALIDA (outgoing).
+        """
+        # 1. Verificar si el control está habilitado
+        control_enabled = self.env['ir.config_parameter'].sudo().get_param(
+            'jobcostphasecat.enable_negative_stock_control',
+            'False'
+        ).lower() == 'true'
+
+        # Si control deshabilitado → comportamiento Odoo estándar
+        if not control_enabled:
+            return super(ZZ_StockPicking, self).action_assign()
+
+        # 2. Solo validar en transferencias de SALIDA
+        if self.picking_type_id.code != 'outgoing':
+            return super(ZZ_StockPicking, self).action_assign()
+
+        # 3. Obtener configuración de almacenes y usuarios permitidos
+        allowed_warehouse_ids = self.env['ir.config_parameter'].sudo().get_param(
+            'jobcostphasecat.allowed_negative_stock_warehouse_ids',
+            '[]'
+        )
+        allowed_user_ids = self.env['ir.config_parameter'].sudo().get_param(
+            'jobcostphasecat.allowed_negative_stock_user_ids',
+            '[]'
+        )
+
+        # Convertir strings a listas de IDs
+        import ast
+        try:
+            allowed_warehouse_ids = ast.literal_eval(allowed_warehouse_ids) if allowed_warehouse_ids else []
+            allowed_user_ids = ast.literal_eval(allowed_user_ids) if allowed_user_ids else []
+        except:
+            allowed_warehouse_ids = []
+            allowed_user_ids = []
+
+        # 4. Verificar EXCEPCIONES (almacén o usuario permitido)
+        warehouse = self.picking_type_id.warehouse_id
+        current_user = self.env.user
+
+        # EXCEPCIÓN 1: El almacén está en la lista de permitidos
+        if warehouse.id in allowed_warehouse_ids:
+            return super(ZZ_StockPicking, self).action_assign()
+
+        # EXCEPCIÓN 2: El usuario está en la lista de autorizados
+        if current_user.id in allowed_user_ids:
+            return super(ZZ_StockPicking, self).action_assign()
+
+        # 5. VALIDAR STOCK - Solo si NO se cumplió ninguna excepción
+        import logging
+        _logger = logging.getLogger(__name__)
+
+        for move in self.move_ids:
+            if move.state in ('done', 'cancel'):
+                continue
+
+            # Validar la cantidad solicitada (product_uom_qty), no la hecha
+            cantidad_solicitada = move.product_uom_qty
+            if cantidad_solicitada <= 0:
+                continue
+
+            # Obtener información completa de stock
+            # Buscamos todos los quants para este producto/ubicación
+            quants = self.env['stock.quant'].search([
+                ('product_id', '=', move.product_id.id),
+                ('location_id', '=', move.location_id.id)
+            ])
+
+            # Calcular stock total físico en almacén
+            stock_total = sum(quants.mapped('quantity'))
+
+            # Calcular stock reservado SOLO de OTRAS transferencias (no la actual)
+            # Buscamos move.lines con reservas excluyendo la transferencia actual
+            otras_reservas = self.env['stock.move.line'].search([
+                ('product_id', '=', move.product_id.id),
+                ('location_id', '=', move.location_id.id),
+                ('reserved_qty', '>', 0),
+                ('state', 'not in', ['done', 'cancel']),
+                ('picking_id', '!=', self.id)  # EXCLUIR la transferencia actual
+            ])
+            stock_reservado = sum(otras_reservas.mapped('reserved_qty'))  # Solo reservas de OTRAS transferencias
+
+            # Stock disponible = Total - Reservas de OTRAS transferencias
+            stock_disponible = stock_total - stock_reservado
+
+            _logger.info("=== VALIDACION STOCK NEGATIVO (Comprobar Disponibilidad) ===")
+            _logger.info("Producto: %s", move.product_id.display_name)
+            _logger.info("Stock Total: %s", stock_total)
+            _logger.info("Stock Reservado: %s", stock_reservado)
+            _logger.info("Stock Disponible: %s", stock_disponible)
+            _logger.info("Cantidad Solicitada: %s", cantidad_solicitada)
+            _logger.info("Usuario: %s", self.env.user.name)
+            _logger.info("Almacén: %s", warehouse.name if warehouse else 'N/A')
+
+            # VALIDAR: Si intenta reservar más del stock DISPONIBLE → ERROR
+            if cantidad_solicitada > stock_disponible:
+                # Buscar información detallada de las reservas (ya calculadas en "otras_reservas")
+                reservas_info = ""
+                if stock_reservado > 0 and otras_reservas:
+                    reservas_info = "\n\n" + "="*50 + "\n"
+                    reservas_info += "DETALLE DE STOCK RESERVADO:\n"
+                    reservas_info += "="*50 + "\n"
+
+                    for line in otras_reservas:
+                        picking_name = line.picking_id.name if line.picking_id else 'N/A'
+                        picking_origin = line.picking_id.origin if line.picking_id and line.picking_id.origin else ''
+                        state_name = dict(line.picking_id._fields['state'].selection).get(line.picking_id.state, line.picking_id.state)
+
+                        reservas_info += "\n• Transferencia: %s" % picking_name
+                        if picking_origin:
+                            reservas_info += " (Origen: %s)" % picking_origin
+                        reservas_info += "\n  Cantidad Reservada: %.2f %s" % (line.reserved_qty, move.product_uom.name)
+                        reservas_info += "\n  Estado: %s" % state_name
+
+                    reservas_info += "\n\n" + "-"*50
+                    reservas_info += "\nPARA LIBERAR RESERVAS:"
+                    reservas_info += "\n" + "-"*50
+                    reservas_info += "\n1. Ir a la transferencia que tiene el stock reservado"
+                    reservas_info += "\n2. Hacer clic en el boton 'Deshacer Reserva'"
+                    reservas_info += "\n3. O cancelar la transferencia si ya no es necesaria"
+                    reservas_info += "\n4. Luego podras comprobar disponibilidad nuevamente"
+
+                error_msg = _(
+                    'STOCK INSUFICIENTE\n\n'
+                    'Producto: %s\n'
+                    'Ubicación: %s\n\n'
+                    'Stock Total:      %10.2f %s\n'
+                    'Stock Reservado: -%10.2f %s\n'
+                    '────────────────────────────────\n'
+                    'Stock Disponible: %10.2f %s\n\n'
+                    'Solicitado:       %10.2f %s\n'
+                    'Faltante:         %10.2f %s'
+                    '%s\n\n'
+                    'NOTA: Solo almacenes y usuarios autorizados pueden hacer salidas con stock insuficiente.\n'
+                    'Contacta al administrador si necesitas autorización.'
+                ) % (
+                    move.product_id.display_name,
+                    move.location_id.complete_name,
+                    stock_total,
+                    move.product_uom.name,
+                    stock_reservado,
+                    move.product_uom.name,
+                    stock_disponible,
+                    move.product_uom.name,
+                    cantidad_solicitada,
+                    move.product_uom.name,
+                    cantidad_solicitada - stock_disponible,
+                    move.product_uom.name,
+                    reservas_info,
+                )
+                _logger.error("=== BLOQUEANDO COMPROBAR DISPONIBILIDAD POR STOCK INSUFICIENTE ===")
+                _logger.error("Disponible: %s | Solicitado: %s", stock_disponible, cantidad_solicitada)
+                if otras_reservas:
+                    _logger.error("Reservas de OTRAS transferencias: %d", len(otras_reservas))
+                    for line in otras_reservas:
+                        _logger.error("  - %s: %.2f unidades", line.picking_id.name, line.reserved_qty)
+                raise UserError(error_msg)
+
+        # 6. Si todo está OK, continuar con la reserva de stock normal
+        return super(ZZ_StockPicking, self).action_assign()
+
 class JC_closed_date_transference(models.Model):
     _name = 'stock.picking.closed'
 
