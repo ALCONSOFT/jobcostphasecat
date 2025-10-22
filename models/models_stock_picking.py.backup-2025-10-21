@@ -183,16 +183,6 @@ class ZZ_StockPicking(models.Model):
             if cantidad_solicitada <= 0:
                 continue
 
-            # SOLO validar ubicaciones INTERNAS (ignorar virtuales)
-            # Las ubicaciones virtuales (Vendors, Customers, etc.) no tienen stock físico
-            if move.location_id.usage != 'internal':
-                _logger.info(
-                    "Saltando validación de stock para ubicación NO interna: %s (tipo: %s)",
-                    move.location_id.complete_name,
-                    move.location_id.usage
-                )
-                continue
-
             # Obtener información completa de stock
             # Buscamos todos los quants para este producto/ubicación
             quants = self.env['stock.quant'].search([
