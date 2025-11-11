@@ -26,6 +26,30 @@ _logger = logging.getLogger(__name__)
 class IrAttachment(models.Model):
     _inherit = 'ir.attachment'
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        """
+        Override para validar que el campo 'name' no esté vacío
+        """
+        # Filtrar attachments inválidos en lugar de crearlos con nombre genérico
+        valid_vals_list = []
+
+        for vals in vals_list:
+            name = vals.get('name')
+            # Validar que el nombre no esté vacío, sea None, False o solo espacios
+            if not name or not str(name).strip():
+                _logger.warning(f'⚠️  Saltando attachment sin nombre válido. Modelo: {vals.get("res_model")}, Mimetype: {vals.get("mimetype")}')
+                # NO crear el attachment - simplemente saltarlo
+                continue
+
+            valid_vals_list.append(vals)
+
+        # Si no hay attachments válidos, retornar recordset vacío
+        if not valid_vals_list:
+            return self.env['ir.attachment']
+
+        return super(IrAttachment, self).create(valid_vals_list)
+
     @api.model
     def check(self, mode, values=None):
         """ Modificación para permitir acceso a usuarios internos a adjuntos """

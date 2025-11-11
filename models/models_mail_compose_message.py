@@ -1,9 +1,37 @@
+import logging
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 from odoo import Command
 
+_logger = logging.getLogger(__name__)
+
 class MailComposeMessage(models.TransientModel):
     _inherit = 'mail.compose.message'
+
+    def generate_email_for_composer(self, template_id, res_ids, fields):
+        """
+        Override para validar attachments generados dinámicamente y evitar nombres vacíos
+        """
+        result = super(MailComposeMessage, self).generate_email_for_composer(template_id, res_ids, fields)
+
+        # Si result es un diccionario de múltiples registros
+        if isinstance(result, dict):
+            for res_id, values in result.items():
+                if isinstance(values, dict) and 'attachments' in values:
+                    # Filtrar attachments con nombres inválidos
+                    valid_attachments = []
+                    for attach in values['attachments']:
+                        if isinstance(attach, (list, tuple)) and len(attach) >= 2:
+                            attach_fname, attach_datas = attach[0], attach[1]
+                            if attach_fname and str(attach_fname).strip():
+                                valid_attachments.append(attach)
+                            else:
+                                _logger.warning(f'Skipping attachment with invalid name: "{attach_fname}" for res_id {res_id}')
+                        else:
+                            valid_attachments.append(attach)
+                    values['attachments'] = valid_attachments
+
+        return result
 
     def _onchange_template_id(self, template_id, composition_mode, model, res_id):
         """
@@ -53,6 +81,10 @@ class MailComposeMessage(models.TransientModel):
             new_attachment_ids = []
             Attachment = self.env['ir.attachment']
             for attach_fname, attach_datas in values.pop('attachments', []):
+                # Validar que attach_fname no esté vacío o sea solo espacios
+                if not attach_fname or not str(attach_fname).strip():
+                    _logger.warning(f'Skipping attachment with invalid name: "{attach_fname}"')
+                    continue
                 data_attach = {
                     'name': attach_fname,
                     'datas': attach_datas,
