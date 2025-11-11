@@ -127,7 +127,9 @@
                 Ver Orden de Compra
               </a>
             </div>
-<!-- Detalle de productos de la orden -->
+<!-- Detalle de productos de la orden - OCULTO (2025-11-09) -->
+<!-- Se oculta el detalle de productos para mostrar solo totales en el correo -->
+<!--
 <tr>
   <td colspan="2" style="padding: 8px;">
     <h3 style="margin-top: 20px; font-size: 15px; color: #005b99;">Detalle de la Orden:</h3>
@@ -165,6 +167,7 @@
     </table>
   </td>
 </tr>
+-->
 
           </div>
         </div>

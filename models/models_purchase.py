@@ -49,8 +49,8 @@ class PurchaseOrder(models.Model):
     )
     subtotal_without_discount = fields.Monetary(
         string='Subtotal sin descuento',
-        store=True,
-        tracking=True
+        store=True
+        # tracking=True  # Removido: no trackear campos computados (evita spam)
     )
 
     @api.depends('company_id')
@@ -88,8 +88,8 @@ class PurchaseOrder(models.Model):
     total_discount = fields.Monetary(
         string='Total Descuento',
         compute='_compute_total_discount',
-        store=True,
-        tracking=True
+        store=True
+        # tracking=True  # Removido: no trackear campos computados (evita spam)
     )
     
 
@@ -118,23 +118,27 @@ class PurchaseOrder(models.Model):
             order_lines = order.order_line.filtered(lambda x: not x.display_type and not x.hide)
 
             if not order_lines:
-                order.amount_untaxed = 0.0
-                order.amount_tax = 0.0
-                order.amount_total = 0.0
+                # Deshabilitar tracking para evitar spam en bitácora (recálculo automático)
+                order.with_context(tracking_disable=True).write({
+                    'amount_untaxed': 0.0,
+                    'amount_tax': 0.0,
+                    'amount_total': 0.0
+                })
             else:
-                # Calculate base for global discount (sum of line subtotals before global discount)
-                base_for_global_discount = sum(line.price_subtotal for line in order_lines)
+                # FIX 2025-11-08: Evitar doble aplicación de descuento global
+                # Para tipos 'percentage' y 'fixed', el descuento ya fue aplicado en las líneas
+                # por _compute_global_discount(), por lo que NO debe aplicarse aquí nuevamente.
+                # Solo se aplicaría un descuento adicional para tipos que no distribuyen a las líneas.
 
                 effective_global_discount_rate = 0.0
-                if base_for_global_discount != 0: # Avoid division by zero
-                    if order.global_discount_type == 'percentage':
-                        effective_global_discount_rate = (order.global_discount_percentage or 0.0) / 100.0
-                    elif order.global_discount_type == 'fixed':
-                        # Calculate rate, ensure it's not more than 1 (100%)
-                        effective_global_discount_rate = min((order.global_discount_fixed_amount or 0.0) / base_for_global_discount, 1.0)
-                
-                # Clamp the rate between 0.0 and 1.0
-                effective_global_discount_rate = min(max(0.0, effective_global_discount_rate), 1.0)
+
+                # NO aplicar descuento a nivel de orden para tipos 'percentage' y 'fixed'
+                # porque ya está aplicado en las líneas por _compute_global_discount()
+                # Los tipos 'percentage_line' y 'fixed_line' se manejan directamente en las líneas
+                # por el usuario, sin distribución automática, así que tampoco necesitan descuento aquí.
+
+                # En resumen: effective_global_discount_rate siempre será 0.0
+                # El descuento real ya está reflejado en line.price_subtotal de cada línea
 
                 new_tax_base_lines = []
                 # en _amount_all, después de construir new_tax_base_lines
@@ -146,26 +150,34 @@ class PurchaseOrder(models.Model):
 
                 for line in order_lines:
                     line_dict = line._convert_to_tax_base_line_dict()
-                    # Apply this line's share of the global discount to its price_unit
-                    # line_dict['price_unit'] is price after line discount but before global discount
-                    line_dict['price_unit'] = line_dict['price_unit'] * (1 - effective_global_discount_rate)
+                    # FIX 2025-11-08: NO aplicar descuento global aquí
+                    # El price_unit en line_dict ya refleja el descuento de línea
+                    # que fue aplicado en _compute_global_discount() para tipos 'percentage' y 'fixed'
+                    # Por lo tanto, NO multiplicamos por (1 - effective_global_discount_rate)
+                    # line_dict['price_unit'] ya es el precio correcto con descuento incluido
                     new_tax_base_lines.append(line_dict)
 
                 if not new_tax_base_lines: # Should not happen if order_lines was not empty, but as a safeguard
-                    order.amount_untaxed = 0.0
-                    order.amount_tax = 0.0
-                    order.amount_total = 0.0
+                    # Deshabilitar tracking para evitar spam en bitácora (recálculo automático)
+                    order.with_context(tracking_disable=True).write({
+                        'amount_untaxed': 0.0,
+                        'amount_tax': 0.0,
+                        'amount_total': 0.0
+                    })
                 else:
                     tax_results = self.env['account.tax']._compute_taxes(new_tax_base_lines)
                     totals = tax_results['totals']
-                    
+
                     # The amount_untaxed from tax_results is now the sum of line subtotals *after* global discount
                     amount_untaxed = totals.get(order.currency_id, {}).get('amount_untaxed', 0.0)
                     amount_tax = totals.get(order.currency_id, {}).get('amount_tax', 0.0)
 
-                    order.amount_untaxed = amount_untaxed
-                    order.amount_tax = amount_tax
-                    order.amount_total = order.amount_untaxed + order.amount_tax
+                    # Deshabilitar tracking para evitar spam en bitácora (recálculo automático)
+                    order.with_context(tracking_disable=True).write({
+                        'amount_untaxed': amount_untaxed,
+                        'amount_tax': amount_tax,
+                        'amount_total': amount_untaxed + amount_tax
+                    })
             
             # The print statements might be for debugging and can be kept or removed based on final requirements.
             # For now, I'll assume they should reflect the final computed values.
@@ -204,7 +216,8 @@ class PurchaseOrder(models.Model):
                     line_discount_percentage = (line_discount_fixed_per_unit / line.price_unit * 100) if line.price_unit > 0 else 0
                     
                     # Solo escribir el tipo y los valores base - el campo computado calculará discount_fixed_amount
-                    line.write({
+                    # Deshabilitar tracking para evitar spam en bitácora (cambios automáticos)
+                    line.with_context(tracking_disable=True).write({
                         'discount_type': 'fixed',
                         'discount': line_discount_percentage
                     })
@@ -216,7 +229,8 @@ class PurchaseOrder(models.Model):
                         continue
                         
                     # Solo escribir el tipo y porcentaje - el campo computado calculará discount_fixed_amount
-                    line.write({
+                    # Deshabilitar tracking para evitar spam en bitácora (cambios automáticos)
+                    line.with_context(tracking_disable=True).write({
                         'discount_type': 'percentage',
                         'discount': order.global_discount_percentage
                     })
@@ -695,6 +709,12 @@ class PurchaseOrderLine(models.Model):
     )
     notes = fields.Text(string='Notes')
     hide = fields.Boolean(string='Hide in Report', default=False)
+
+    line_number_display = fields.Char(
+        string='#',
+        compute='_compute_line_number_display',
+        store=False
+    )
     discount = fields.Float(string="Discount (%)", digits="Discount")
     phase_id = fields.Many2one("project.phaseproject",
                                string="Fase",
@@ -728,9 +748,53 @@ class PurchaseOrderLine(models.Model):
     ]
 
     price_unit_discounted = fields.Monetary(
-        compute='_compute_price_unit_discounted', 
+        compute='_compute_price_unit_discounted',
         string='Initial Discounted Price'
     )
+
+    # Métodos computados
+    @api.depends('order_id.order_line', 'sequence')
+    def _compute_line_number_display(self):
+        """Calcula el número de línea correlativo (1, 2, 3...) en vez de la secuencia
+        Maneja correctamente líneas nuevas sin ID y recalcula al mover/agregar líneas"""
+
+        # Procesar por orden para mayor eficiencia
+        for order in self.mapped('order_id'):
+            # Filtrar líneas válidas que tienen ID
+            lines_with_id = order.order_line.filtered(
+                lambda l: not l.display_type and l.id
+            ).sorted('sequence')
+
+            # Asignar números correlativos a líneas guardadas
+            for idx, line in enumerate(lines_with_id, start=1):
+                line.line_number_display = str(idx)
+
+        # Manejar líneas nuevas sin ID (en creación)
+        for line in self.filtered(lambda l: not l.id):
+            if line.order_id:
+                # Contar líneas existentes + 1
+                existing_count = len(line.order_id.order_line.filtered(
+                    lambda l: not l.display_type and l.id
+                ))
+                line.line_number_display = str(existing_count + 1)
+            else:
+                line.line_number_display = "•"  # Temporal hasta que se asigne a una orden
+
+    def action_open_line_form(self):
+        """Abrir formulario completo de la línea en popup"""
+        self.ensure_one()
+        # Obtener el número de línea correlativo calculado
+        line_number = self.line_number_display or "0"
+        return {
+            'name': f'Línea #{line_number} - {self.product_id.name or "Nueva Línea"}',
+            'type': 'ir.actions.act_window',
+            'res_model': 'purchase.order.line',
+            'view_mode': 'form',
+            'res_id': self.id,
+            'target': 'new',  # Abrir en popup
+            'context': self.env.context,
+            'view_id': self.env.ref('jobcostphasecat.view_purchase_order_line_form_complete_popup').id,
+        }
 
     @api.depends('price_unit', 'discount', 'discount_type', 'discount_fixed_amount')
     def _compute_price_unit_discounted(self):

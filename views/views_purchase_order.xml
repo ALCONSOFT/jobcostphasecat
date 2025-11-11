@@ -55,6 +55,27 @@
                 <xpath expr="//field[@name='currency_id']" position="after">
                     <field name="invoice_status"/>
                 </xpath>
+
+                <!-- Habilitar edición inline en el tree (editar directo en la línea) -->
+                <xpath expr="//field[@name='order_line']/tree" position="attributes">
+                    <attribute name="editable">bottom</attribute>
+                </xpath>
+
+                <!-- Convertir sequence en widget handle para arrastrar y ordenar -->
+                <xpath expr="//field[@name='order_line']/tree/field[@name='sequence']" position="attributes">
+                    <attribute name="widget">handle</attribute>
+                </xpath>
+
+                <!-- Agregar campo # de línea clickeable como primera columna -->
+                <xpath expr="//field[@name='order_line']/tree/field[@name='product_id']" position="before">
+                    <field name="line_number_display" string="#" readonly="1"/>
+                    <button name="action_open_line_form"
+                            type="object"
+                            icon="fa-edit"
+                            class="btn-sm btn-link"
+                            title="Editar línea"/>
+                </xpath>
+
                 <!-- Insertamos el botón dentro del árbol de las líneas: 2025.02.26 -->
                 <xpath expr="//field[@name='order_line']/tree" position="inside">
                     <button name="action_view_line_history"
@@ -146,7 +167,7 @@
                            attrs="{
                                'column_invisible': [('discount_type', '=', 'percentage')],
                                'readonly': [('parent.state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])],
-                              
+
                            }"/>
                     <field name="hide" optional="show" class="text-primary" decoration-danger="hide == True"/>
                     <field name="phase_id" optional="show"/>
@@ -196,11 +217,335 @@
                 </xpath>
             </field>
         </record>
+        <!-- Vista Form COMPLETA para popup con botón -->
+        <record id="view_purchase_order_line_form_complete_popup" model="ir.ui.view">
+            <field name="name">purchase.order.line.form.complete.popup</field>
+            <field name="model">purchase.order.line</field>
+            <field name="priority">1</field>
+            <field name="arch" type="xml">
+                <form string="Línea de Orden de Compra" create="false" edit="true" delete="true">
+                    <header>
+                        <button name="unlink"
+                                string="🗑️ Eliminar Línea"
+                                type="object"
+                                class="oe_highlight"
+                                confirm="¿Está seguro que desea eliminar esta línea?"
+                                attrs="{'invisible': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                        <field name="state" widget="statusbar" statusbar_visible="draft,sent,waiting_for_price_revision,purchase,done"/>
+                    </header>
+                    <sheet>
+                        <div class="alert alert-warning" role="alert" attrs="{'invisible': [('hide', '=', False)]}">
+                            <strong>⚠️ Línea Oculta:</strong> Esta línea está marcada para ocultarse en reportes
+                        </div>
+
+                        <group>
+                            <group string="Información del Producto">
+                                <field name="order_id" readonly="1"/>
+                                <field name="product_id" attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                                <field name="name" attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                                <field name="product_qty" attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                                <field name="product_uom" attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                                <field name="date_planned" attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                            </group>
+
+                            <group string="Proyecto y Distribución">
+                                <field name="account_analytic_id" attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                                <field name="analytic_distribution" widget="analytic_distribution" attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                                <field name="phase_id" attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                                <field name="vehicle_id" attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                            </group>
+                        </group>
+
+                        <group>
+                            <group string="Precios y Descuentos">
+                                <field name="price_unit" attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                                <field name="discount_type" attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                                <field name="discount" attrs="{'invisible': [('discount_type', '!=', 'percentage')], 'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                                <field name="discount_fixed_amount" attrs="{'invisible': [('discount_type', '!=', 'fixed')], 'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                                <field name="taxes_id" widget="many2many_tags" attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                            </group>
+
+                            <group string="Opciones">
+                                <field name="hide" string="🔴 Ocultar en Reportes" widget="boolean_toggle" attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                                <field name="display_type" attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                                <field name="sequence" attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                            </group>
+                        </group>
+
+                        <group>
+                            <field name="notes" placeholder="Notas adicionales..." attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                        </group>
+
+                        <group string="Totales">
+                            <group>
+                                <field name="price_subtotal" readonly="1" widget="monetary"/>
+                                <field name="price_tax" readonly="1" widget="monetary"/>
+                                <field name="price_total" readonly="1" widget="monetary"/>
+                            </group>
+                            <group>
+                                <field name="qty_received" readonly="1"/>
+                                <field name="qty_invoiced" readonly="1"/>
+                            </group>
+                        </group>
+
+                        <!-- Campos invisibles necesarios -->
+                        <field name="product_uom_category_id" invisible="1"/>
+                        <field name="company_id" invisible="1"/>
+                        <field name="currency_id" invisible="1"/>
+                        <field name="partner_id" invisible="1"/>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- VISTA COMPLETA ORIGINAL - NO SE USA AHORA -->
+        <record id="view_purchase_order_line_form_popup_jc_DISABLED" model="ir.ui.view">
+            <field name="name">purchase.order.line.form.popup.jc.disabled</field>
+            <field name="model">purchase.order.line</field>
+            <field name="active" eval="False"/>
+            <field name="arch" type="xml">
+                <form string="Línea de Orden de Compra - DISABLED">
+                    <header>
+                        <field name="state" widget="statusbar" statusbar_visible="draft,sent,waiting_for_price_revision,purchase,done"/>
+                        <button name="action_view_line_history" string="Ver Historial Completo" type="object" class="btn-secondary"/>
+                    </header>
+                    <sheet>
+                        <!-- Banner de advertencia para líneas ocultas -->
+                        <div class="alert alert-warning" role="alert" attrs="{'invisible': [('hide', '=', False)]}">
+                            <strong>⚠️ Línea Oculta:</strong> Esta línea está marcada para ocultarse en reportes
+                        </div>
+
+                        <group>
+                            <group string="📋 Información General">
+                                <field name="order_id" readonly="1" force_save="1"/>
+                                <field name="partner_id" readonly="1" string="Proveedor"/>
+                                <field name="company_id" invisible="1"/>
+                                <field name="currency_id" invisible="1"/>
+                                <field name="product_uom_category_id" invisible="1"/>
+                                <field name="state" invisible="1"/>
+                                <field name="product_id"
+                                    attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                                <field name="product_categ_id" readonly="1" string="Categoría"/>
+                                <field name="name" string="Descripción"
+                                    attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                                <field name="date_planned" string="Fecha Programada"
+                                    attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                            </group>
+
+                            <group string="🎯 Proyecto y Distribución">
+                                <field name="pr_ref_ids" readonly="1" string="Referencia SdC"/>
+                                <field name="account_analytic_id" string="Cuenta Analítica"
+                                    attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                                <field name="analytic_distribution" widget="analytic_distribution" string="Distribución Analítica"
+                                    attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                                <field name="phase_id" string="Fase"
+                                    attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                                <field name="vehicle_id" string="Vehículo"
+                                    attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                            </group>
+                        </group>
+
+                        <group>
+                            <group string="📊 Cantidades y Unidades">
+                                <field name="product_qty" string="Cantidad Pedida"
+                                    attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                                <field name="product_uom" string="Unidad de Medida"
+                                    attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                                <field name="product_packaging_id" string="Empaque" optional="hide"
+                                    attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                                <separator string="Estado de Recepción y Facturación" colspan="2"/>
+                                <field name="qty_received" readonly="1" string="Cantidad Recibida"/>
+                                <field name="qty_received_manual" readonly="1" string="Cant. Recibida Manual"/>
+                                <field name="qty_invoiced" readonly="1" string="Cantidad Facturada"/>
+                                <field name="qty_to_invoice" readonly="1" string="Cantidad por Facturar"/>
+                                <field name="x_is_incomplete" readonly="1" string="Recepción Incompleta"/>
+                            </group>
+
+                            <group string="💰 Precios y Descuentos">
+                                <field name="price_unit" string="Precio Unitario"
+                                    attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                                <field name="discount_type" string="Tipo de Descuento"
+                                    attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                                <field name="discount"
+                                    string="Descuento (%)"
+                                    attrs="{
+                                        'invisible': [('discount_type', '!=', 'percentage')],
+                                        'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]
+                                    }"/>
+                                <field name="discount_fixed_amount"
+                                    string="Descuento Fijo"
+                                    attrs="{
+                                        'invisible': [('discount_type', '!=', 'fixed')],
+                                        'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]
+                                    }"/>
+                                <field name="price_unit_discounted" readonly="1" string="Precio Unitario con Desc."/>
+                            </group>
+                        </group>
+
+                        <group>
+                            <group string="💵 Impuestos y Totales">
+                                <field name="taxes_id" widget="many2many_tags" string="Impuestos"
+                                    attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                                <separator string="Totales Calculados" colspan="2"/>
+                                <field name="price_subtotal" readonly="1" widget="monetary" string="Subtotal"/>
+                                <field name="price_tax" readonly="1" widget="monetary" string="Impuesto"/>
+                                <field name="price_total" readonly="1" widget="monetary" string="Total"/>
+                                <separator string="Totales Visibles (Sin Ocultas)" colspan="2"/>
+                                <field name="price_subtotal_visible" readonly="1" widget="monetary" string="Subtotal Visible"/>
+                                <field name="price_tax_visible" readonly="1" widget="monetary" string="Impuesto Visible"/>
+                                <field name="price_total_visible" readonly="1" widget="monetary" string="Total Visible"/>
+                            </group>
+
+                            <group string="⚙️ Opciones y Configuración">
+                                <field name="hide" string="🔴 Ocultar en Reportes" widget="boolean_toggle"
+                                    attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                                <field name="allow_qty_change_line" readonly="1" string="Permitir Cambio Cant."/>
+                                <field name="display_type" string="Tipo de Visualización"
+                                    attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                                <field name="sequence" string="Secuencia/Orden"
+                                    attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                                <field name="product_type" readonly="1" string="Tipo de Producto"/>
+                                <separator string="Notas Adicionales" colspan="2"/>
+                                <field name="notes" nolabel="1" placeholder="Notas adicionales para esta línea..."
+                                    attrs="{'readonly': [('state', 'not in', ['draft', 'sent', 'waiting_for_price_revision'])]}"/>
+                            </group>
+                        </group>
+
+                        <!-- Sección adicional: Movimientos de Stock -->
+                        <group string="📦 Movimientos de Stock" attrs="{'invisible': [('product_type', '=', 'service')]}">
+                            <field name="move_ids" readonly="1" nolabel="1">
+                                <tree>
+                                    <field name="reference"/>
+                                    <field name="picking_id"/>
+                                    <field name="product_uom_qty" string="Cantidad"/>
+                                    <field name="quantity_done" string="Realizado"/>
+                                    <field name="state"/>
+                                    <field name="date" string="Fecha"/>
+                                </tree>
+                            </field>
+                        </group>
+
+                        <notebook>
+                            <page string="📚 Historial de Compras">
+                                <group>
+                                    <group>
+                                        <field name="pr_request_date" readonly="1" string="Fecha SdC"/>
+                                        <field name="date_order" readonly="1" string="Fecha Orden"/>
+                                    </group>
+                                    <group>
+                                        <field name="days_deferred" readonly="1" string="Días Diferidos"/>
+                                        <field name="hours_deferred" readonly="1" string="Horas Diferidas"/>
+                                    </group>
+                                </group>
+                                <separator string="Compras Anteriores del Mismo Producto"/>
+                                <field name="line_history_ids" readonly="1" nolabel="1">
+                                    <tree>
+                                        <field name="order_id" string="Orden"/>
+                                        <field name="partner_id" string="Proveedor"/>
+                                        <field name="date_order" string="Fecha"/>
+                                        <field name="product_qty" string="Cantidad"/>
+                                        <field name="price_unit" string="P.U."/>
+                                        <field name="discount" string="Desc.%"/>
+                                        <field name="price_total" string="Total"/>
+                                        <field name="state" string="Estado"/>
+                                    </tree>
+                                </field>
+                            </page>
+
+                            <page string="📄 Facturación" attrs="{'invisible': [('invoice_lines', '=', [])]}">
+                                <field name="invoice_lines" readonly="1" nolabel="1">
+                                    <tree>
+                                        <field name="move_id" string="Factura"/>
+                                        <field name="date" string="Fecha"/>
+                                        <field name="quantity" string="Cantidad"/>
+                                        <field name="price_unit" string="P.U."/>
+                                        <field name="price_subtotal" string="Subtotal"/>
+                                    </tree>
+                                </field>
+                            </page>
+
+                            <page string="🔍 Información Técnica">
+                                <group>
+                                    <group string="IDs y Referencias">
+                                        <field name="id" readonly="1"/>
+                                        <field name="order_id" readonly="1"/>
+                                        <field name="company_id" readonly="1"/>
+                                        <field name="currency_id" readonly="1"/>
+                                        <field name="partner_id" readonly="1"/>
+                                    </group>
+                                    <group string="Fechas">
+                                        <field name="create_date" readonly="1" string="Fecha Creación"/>
+                                        <field name="write_date" readonly="1" string="Última Modificación"/>
+                                        <field name="create_uid" readonly="1" string="Creado por"/>
+                                        <field name="write_uid" readonly="1" string="Modificado por"/>
+                                        <field name="date_order" readonly="1" string="Fecha Orden"/>
+                                    </group>
+                                </group>
+                                <group>
+                                    <group string="Campos Calculados">
+                                        <field name="price_unit_discounted" readonly="1" string="P.U. con Descuento"/>
+                                        <field name="x_is_incomplete" readonly="1" string="Recepción Incompleta"/>
+                                    </group>
+                                    <group string="Configuración">
+                                        <field name="product_uom_category_id" readonly="1" string="Categoría UdM"/>
+                                    </group>
+                                </group>
+                            </page>
+
+                            <page string="📊 Resumen Completo">
+                                <group col="4">
+                                    <group string="Producto" colspan="2">
+                                        <field name="product_id" readonly="1"/>
+                                        <field name="product_categ_id" readonly="1"/>
+                                        <field name="product_type" readonly="1"/>
+                                        <field name="name" readonly="1"/>
+                                    </group>
+                                    <group string="Cantidades" colspan="2">
+                                        <label for="product_qty" string="Pedida / Recibida / Facturada"/>
+                                        <div>
+                                            <field name="product_qty" readonly="1" class="oe_inline"/> /
+                                            <field name="qty_received" readonly="1" class="oe_inline"/> /
+                                            <field name="qty_invoiced" readonly="1" class="oe_inline"/>
+                                        </div>
+                                        <field name="qty_to_invoice" readonly="1"/>
+                                        <field name="product_uom" readonly="1"/>
+                                    </group>
+                                    <group string="Precios" colspan="2">
+                                        <field name="price_unit" readonly="1"/>
+                                        <field name="discount" readonly="1"/>
+                                        <field name="discount_type" readonly="1"/>
+                                        <field name="discount_fixed_amount" readonly="1"/>
+                                        <field name="price_unit_discounted" readonly="1"/>
+                                    </group>
+                                    <group string="Totales" colspan="2">
+                                        <field name="price_subtotal" readonly="1" widget="monetary"/>
+                                        <field name="price_tax" readonly="1" widget="monetary"/>
+                                        <field name="price_total" readonly="1" widget="monetary"/>
+                                    </group>
+                                    <group string="Proyecto" colspan="2">
+                                        <field name="account_analytic_id" readonly="1"/>
+                                        <field name="phase_id" readonly="1"/>
+                                        <field name="vehicle_id" readonly="1"/>
+                                    </group>
+                                    <group string="Estado" colspan="2">
+                                        <field name="state" readonly="1"/>
+                                        <field name="invoice_status" readonly="1"/>
+                                        <field name="hide" readonly="1"/>
+                                        <field name="display_type" readonly="1"/>
+                                    </group>
+                                </group>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
         <!-- views/purchase_order_line_history.xml -->
         <record id="view_purchase_order_line_form_inherit_history" model="ir.ui.view">
             <field name="name">purchase.order.line.form.inherit.history</field>
             <field name="model">purchase.order.line</field>
-            <field name="inherit_id" ref="purchase.purchase_order_line_form2"/> 
+            <field name="inherit_id" ref="purchase.purchase_order_line_form2"/>
             <!-- Ajusta el ref al XML que define el formulario de la línea -->
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='price_unit']" position="after">
