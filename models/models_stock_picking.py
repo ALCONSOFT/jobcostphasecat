@@ -11,7 +11,7 @@ from odoo import api, fields, models, _, tools
 from odoo.osv import expression
 from odoo.tools import DEFAULT_SERVER_DATETIME_FORMAT
 from odoo.tools.float_utils import float_is_zero
-from odoo.exceptions import AccessError, UserError, ValidationError, ValidationError, Warning, RedirectWarning
+from odoo.exceptions import AccessError, UserError, ValidationError, ValidationError, RedirectWarning
 from odoo.tools.misc import formatLang, get_lang
 #"Alconor: En construccion; 15-ene-2022"
 class ZZ_StockPicking(models.Model):

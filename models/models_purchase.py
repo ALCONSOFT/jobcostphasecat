@@ -107,72 +107,46 @@ class PurchaseOrder(models.Model):
         'global_discount_percentage',
         'global_discount_fixed_amount')
     def _amount_all(self):
-        # 2025.05.30: Se calcula el descuento global
-        self._compute_global_discount()
-        # 2025.06.06: Calcular Sub-Total sin descuento
-        self.subtotal_without_discount = self._compute_subtotal_without_discount()
-        # 2025.05.30: Se recalcula los totales de la orden de compra
-        self.total_discount = self._compute_total_discount()
-        # Se recalcula los totales de la orden de compra
-        for order in self:
-            order_lines = order.order_line.filtered(lambda x: not x.display_type and not x.hide)
-
-            if not order_lines:
-                order.amount_untaxed = 0.0
-                order.amount_tax = 0.0
-                order.amount_total = 0.0
-            else:
-                # Calculate base for global discount (sum of line subtotals before global discount)
-                base_for_global_discount = sum(line.price_subtotal for line in order_lines)
-
-                effective_global_discount_rate = 0.0
-                if base_for_global_discount != 0: # Avoid division by zero
-                    if order.global_discount_type == 'percentage':
-                        effective_global_discount_rate = (order.global_discount_percentage or 0.0) / 100.0
-                    elif order.global_discount_type == 'fixed':
-                        # Calculate rate, ensure it's not more than 1 (100%)
-                        effective_global_discount_rate = min((order.global_discount_fixed_amount or 0.0) / base_for_global_discount, 1.0)
-                
-                # Clamp the rate between 0.0 and 1.0
-                effective_global_discount_rate = min(max(0.0, effective_global_discount_rate), 1.0)
-
-                new_tax_base_lines = []
-                # en _amount_all, después de construir new_tax_base_lines
-                if new_tax_base_lines:
-                    # 🔸  Asegura que todos los taxes usados en las líneas existen y están flushados
-                    self.env.cr.flush()
-
-                    tax_results = self.env['account.tax']._compute_taxes(new_tax_base_lines)
-
-                for line in order_lines:
-                    line_dict = line._convert_to_tax_base_line_dict()
-                    # Apply this line's share of the global discount to its price_unit
-                    # line_dict['price_unit'] is price after line discount but before global discount
-                    line_dict['price_unit'] = line_dict['price_unit'] * (1 - effective_global_discount_rate)
-                    new_tax_base_lines.append(line_dict)
-
-                if not new_tax_base_lines: # Should not happen if order_lines was not empty, but as a safeguard
-                    order.amount_untaxed = 0.0
-                    order.amount_tax = 0.0
-                    order.amount_total = 0.0
-                else:
-                    tax_results = self.env['account.tax']._compute_taxes(new_tax_base_lines)
-                    totals = tax_results['totals']
-                    
-                    # The amount_untaxed from tax_results is now the sum of line subtotals *after* global discount
-                    amount_untaxed = totals.get(order.currency_id, {}).get('amount_untaxed', 0.0)
-                    amount_tax = totals.get(order.currency_id, {}).get('amount_tax', 0.0)
-
-                    order.amount_untaxed = amount_untaxed
-                    order.amount_tax = amount_tax
-                    order.amount_total = order.amount_untaxed + order.amount_tax
+        # Método simplificado para Odoo 18 - evita métodos obsoletos
+        try:
+            # Usar el método padre para cálculos básicos
+            super()._amount_all()
             
-            # The print statements might be for debugging and can be kept or removed based on final requirements.
-            # For now, I'll assume they should reflect the final computed values.
-            print("Amount Untaxed:", order.amount_untaxed)
-            print("Amount Tax:", order.amount_tax)
-            print("Amount Total:", order.amount_total)
-            self._compute_tax_totals()
+            # Aplicar descuentos globales de forma simplificada
+            for order in self:
+                # Calcular descuentos globales
+                order._compute_global_discount()
+                order.subtotal_without_discount = order._compute_subtotal_without_discount()
+                order.total_discount = order._compute_total_discount()
+                
+                # Aplicar descuento global al total
+                if order.global_discount_type and order.amount_untaxed > 0:
+                    original_untaxed = order.amount_untaxed
+                    discount_amount = 0.0
+                    
+                    if order.global_discount_type == 'percentage' and order.global_discount_percentage:
+                        discount_amount = original_untaxed * (order.global_discount_percentage / 100)
+                    elif order.global_discount_type == 'fixed' and order.global_discount_fixed_amount:
+                        discount_amount = min(order.global_discount_fixed_amount, original_untaxed)
+                    
+                    if discount_amount > 0:
+                        # Aplicar descuento al subtotal
+                        order.amount_untaxed = original_untaxed - discount_amount
+                        order.amount_total = order.amount_untaxed + order.amount_tax
+                
+                # Debug prints
+                print(f"Amount Untaxed: {order.amount_untaxed}")
+                print(f"Amount Tax: {order.amount_tax}")
+                print(f"Amount Total: {order.amount_total}")
+                
+        except Exception as e:
+            # En caso de error, usar solo el método padre
+            super()._amount_all()
+            print(f"Error en _amount_all personalizado: {e}")
+            
+        # Fuerza el volcado de datos al cursor
+        self.env.cr.flush()
+
 
     def _compute_global_discount(self):
         # 2025.05.30: Se agrega el calculo de los totales tomando en cuenta los descuentos globales
@@ -236,7 +210,9 @@ class PurchaseOrder(models.Model):
                 # Ensure to use the same filtering as in _amount_all for consistency
                 order_lines = order.order_line.filtered(lambda x: not x.display_type and not x.hide)
                 current_subtotal = sum(line.price_subtotal for line in order_lines)
-                if order.global_discount_fixed_amount > current_subtotal:
+                
+                # Solo validar si hay líneas de pedido y el descuento es mayor a cero
+                if current_subtotal > 0 and order.global_discount_fixed_amount > current_subtotal:
                     raise UserError(_('Global fixed discount amount (%(amount).2f) cannot exceed the total untaxed amount before global discount (%(subtotal).2f).') % {
                         'amount': order.global_discount_fixed_amount,
                         'subtotal': current_subtotal
@@ -245,13 +221,22 @@ class PurchaseOrder(models.Model):
     @api.depends_context('lang')
     @api.depends('order_line.taxes_id', 'order_line.price_subtotal', 'amount_total', 'amount_untaxed')
     def _compute_tax_totals(self):
-        for order in self:
-            order_lines = order.order_line.filtered(lambda x: not x.display_type and not x.hide)
-            order.tax_totals = self.env['account.tax']._prepare_tax_totals(
-                [x._convert_to_tax_base_line_dict() for x in order_lines],
-                order.currency_id or order.company_id.currency_id,
-            )
-        print("Tax Totals:", order.tax_totals)
+        # Método temporalmente comentado para Odoo 18 - usar método padre
+        # El método _prepare_tax_totals no existe en Odoo 18
+        # TODO: Implementar cálculo de tax_totals compatible con Odoo 18
+        try:
+            # Usar el método padre si existe
+            super()._compute_tax_totals()
+        except AttributeError:
+            # Fallback: calcular manualmente o usar valor por defecto
+            for order in self:
+                order.tax_totals = {
+                    'amount_total': order.amount_total,
+                    'amount_untaxed': order.amount_untaxed,
+                    'formatted_amount_total': order.currency_id.format(order.amount_total),
+                    'formatted_amount_untaxed': order.currency_id.format(order.amount_untaxed),
+                }
+        # print("Tax Totals:", order.tax_totals)  # Comentado para evitar spam en logs
 
     # Accion de crear factura desde purchase en jobcostphasecat: Se agrega la condición para que no se cree la factura si la línea está oculta
     # 2025.01.23

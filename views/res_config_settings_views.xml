@@ -5,7 +5,7 @@
     <field name="model">res.config.settings</field>
     <field name="inherit_id" ref="purchase.res_config_settings_view_form_purchase"/>
     <field name="arch" type="xml">
-      <xpath expr="//div[@data-key='purchase']" position="inside">
+      <xpath expr="//block[@name='purchase_setting_container']" position="inside">
         <!-- Grupo de configuración Job Cost Phase Category -->
         <div class="o_setting_group">
           <h2>Job Cost Phase Category</h2>

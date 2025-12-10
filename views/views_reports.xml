@@ -5,7 +5,7 @@
         <field name="name">Lista Reporte de Proyectos - Carga de Salidas de Almacen</field>
         <field name="model">project.vsqlcss</field>
         <field name="arch" type="xml">
-            <tree>
+            <list>
                 <field name="name"/>
                 <field name="fecha"/>
                 <field name="paquete_inventario"/>
@@ -31,7 +31,7 @@
                 <field name="tipo_recoleccion"/>
                 <field name="partner_id"/>
                 <field name="codigo_contratista"/>
-            </tree>
+            </list>
         </field>
         </record>
 
@@ -39,7 +39,7 @@
         <record id="action_reportes_project" model="ir.actions.act_window">
             <field name="name">Accion Reportes Proyecto</field>
             <field name="res_model">project.vsqlcss</field>
-            <field name="view_mode">tree,form</field>
+            <field name="view_mode">list,form</field>
         </record>       
         <!--menu del nivel superior-->
         <menuitem id="menu_reportes_project"

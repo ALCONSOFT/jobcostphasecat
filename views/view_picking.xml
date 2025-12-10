@@ -5,17 +5,17 @@
       <field name="name">Fecha Cierre Transferencias</field>
       <field name="model">stock.picking.closed</field>
       <field name="arch" type="xml">
-        <tree>
+        <list>
           <field name="name"/>
           <field name="closed_date"/>
-        </tree>
+        </list>
       </field>
     </record>
     <!--ACCION DE VENTANA: Closed Date-->
     <record model="ir.actions.act_window" id="jobcostphasecat.action_windows_closed_date">
       <field name="name">Fecha Cierre Transferencias</field>
       <field name="res_model">stock.picking.closed</field>
-      <field name="view_mode">tree,form</field>
+      <field name="view_mode">list,form</field>
     </record>
 
     <!--ELEMENTO DE MENU: Lista de Closed Date-->

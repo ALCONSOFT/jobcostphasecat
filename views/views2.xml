@@ -78,11 +78,11 @@
                 </field>
                 
                 <xpath
-                    expr="//field[@name='move_ids_without_package']/tree/field[@name='analytic_distribution']"
+                    expr="//field[@name='move_ids_without_package']/list/field[@name='analytic_distribution']"
                     position="after"
                 >
                     <field name="category_id" optional="hide"/>
-                    <field name="account_analytic_id" optinoal="show"/>
+                    <field name="account_analytic_id" optional="show"/>
                     <field name="phase_id" optional="show"/>
                     <field name="vehicle_id" optional="show"/>
                     
@@ -105,7 +105,7 @@
                 </xpath>
      
                 <xpath
-                    expr="//field[@name='move_ids_without_package']/tree/field[@name='analytic_distribution']"
+                    expr="//field[@name='move_ids_without_package']/list/field[@name='analytic_distribution']"
                     position="replace"
                 >
                     <field
@@ -138,12 +138,12 @@
             <field name="name">project.phaseproject.tree</field>
             <field name="model">project.phaseproject</field>
             <field name="arch" type="xml">
-                <tree string="Task Phase">
+                <list string="Task Phase">
                     <field name="name"/>
                     <field name="notes" string="Nombre Fase"/>
                     <field name="account_analytic_id" />
                     <field name="company_id" />
-                </tree>
+                </list>
             </field>
         </record>
         <!--Form de Alerta: Desarrollado para refrescar el form de stock picking -->
@@ -161,7 +161,7 @@
     <record model="ir.actions.act_window" id="jobcostphasecat.action_windows_stock_mensaje">
       <field name="name">Mensaje de Alerta de Stock</field>
       <field name="res_model">stock.mensaje</field>
-      <field name="view_mode">tree,form</field>
+      <field name="view_mode">list,form</field>
     </record>
 
     <!--ELEMENTO DE MENU: Lista de Closed Date-->

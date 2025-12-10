@@ -59,7 +59,9 @@ class ProductTemplate(models.Model):
     
     def write(self, vals):
         res = super(ProductTemplate, self).write(vals)
-        for field in vals.keys():
-            self.message_post(body=f"Cambio en {field}: {vals[field]}")
+        if self:  # Only if recordset is not empty
+            for record in self:
+                for field in vals.keys():
+                    record.message_post(body=f"Cambio en {field}: {vals[field]}")
         return res
 

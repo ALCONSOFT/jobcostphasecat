@@ -8,9 +8,9 @@
         <field name="inherit_id" ref="ethics_purchase_request.view_purchase_request"/>
         <field name="arch" type="xml">
         
-            <xpath expr="//tree" position="inside">
+            <xpath expr="//list" position="inside">
                 <!-- Añade aquí campos adicionales si es necesario, ejemplo: -->
-                <field name="vehicle_id" optional="show"/>
+                <!-- vehicle_id se muestra en vendor_ids section -->
                 <field name="account_analytic_id" optional="show"/>
             </xpath>
             <xpath expr="//field[@name='priority']" position="after">
@@ -42,10 +42,10 @@
     </record>
     <!-- NUeva vista arbol de Solicitud ede compras  domain="[('warehouse_id', 'not in', current_user_id.warehouse_ids.ids)]"-->
     <record id="view_purchase_request_tree_main" model="ir.ui.view">
-        <field name="name">purchase.request.tree</field>
+        <field name="name">purchase.request.tree.jobcostphasecat</field>
         <field name="model">purchase.request</field>
         <field name="arch" type="xml">
-            <tree string="Solicitud de Compra">
+            <list string="Solicitud de Compra">
                 <field name="name"/>
                 <field name="employee_id" widget="many2one_avatar_user"/>
                 <field name="department_id"/>
@@ -62,16 +62,16 @@
                     decoration-muted="state in ['cancel']"/>
                 <field name="priority"/>
                 <field name="warehouse_id"/>
-                <field name="unauthorized_warehouses" optional="hide" widget="many2many_tags" modifiers="{&quot;readonly&quot;: true}"/>
-                <field name="mostrar_a_usuario" optional="hide" modifiers="{&quot;readonly&quot;: true}"/>
-            </tree>
+                <field name="unauthorized_warehouses" optional="hide" widget="many2many_tags" readonly="1"/>
+                <field name="mostrar_a_usuario" optional="hide" readonly="1"/>
+            </list>
         </field>
     </record>
     <record id="action_purchase_request_tree_main" model="ir.actions.act_window">
         <field name="name">Solicitudes de Compra</field>
         <field name="type">ir.actions.act_window</field>
         <field name="res_model">purchase.request</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
         <field name="domain">[('mostrar_a_usuario', '=', True)]</field>
         <field name="view_id" ref="view_purchase_request_tree_main"/>
     </record>
@@ -89,16 +89,14 @@
         <field name="arch" type="xml">
             <field name="request_responsible" position="after">
                 <field name="picking_type_id" string="Entregar a Almacén:" domain="[('code', '=', 'incoming')]"/>
-                <field name="vehicle_id" optional="show"/>
-                <field name="account_analytic_id" optional="show"/>
+                <field name="account_analytic_id"/>
             </field>
             <!--2025.04.28-->
             <xpath expr="//field[@name='vendor_ids']" position="after">
-                <field name="vehicle_id" domain="[]" optional="show"/>
+                <field name="vehicle_id" domain="[]"/>
                 <field name="phase_id"
                     domain="[]"
-                    optional="show"
-                    attrs="{'required': [('require_phase_id','=',True)]}"/>
+                    required="require_phase_id"/>
             </xpath>
            
             <!-- Botón para generar el reporte QWeb -->
@@ -110,11 +108,11 @@
             <xpath expr="//button[@name='action_confirm']" position="replace">
                 <button name="action_confirm_ethics"
                         string="Aprobar SdC" class="btn-primary" type="object"
-                        attrs="{'invisible': [('state', '!=', 'waiting_for_approver')]}"
+                        invisible="state != 'waiting_for_approver'"
                         groups="ethics_purchase_request.group_request_approver"/>
                 <button name="reject_approver_pr"
                         string="Rechazar SdC" type="object" class='oe_highlight'
-                        attrs="{'invisible': [('state', '!=', 'waiting_for_approver')]}"
+                        invisible="state != 'waiting_for_approver'"
                         groups="jobcostphasecat.group_request_approver"/>                        
             </xpath>
             <!-- Insertar modificaciones después del campo priority -->
@@ -138,17 +136,17 @@
             <xpath expr="//button[@name='action_submit_for_verifier']" position="replace">
                 <button name="action_submit_for_verifier_jc"
                         string="Enviar a Verificar" class="btn-primary" type="object"
-                        attrs="{'invisible': [('state', '!=', 'draft')]}"
+                        invisible="state != 'draft'"
                         groups="ethics_purchase_request.group_request_user"/>
             </xpath>
             <xpath expr="//button[@name='reject_verifier_pr']" position="replace">            
                 <button name="reject_verifier_pr_jc"
                         string="Rechazar" type="object" class='oe_highlight'
-                        attrs="{'invisible': [('state', '!=', 'waiting_for_verifier')]}"
+                        invisible="state != 'waiting_for_verifier'"
                         groups="ethics_purchase_request.group_request_user"/>
                 <button name="reject_verifier_pr_jc"
                         string="Enviar a Borrador" type="object" class='oe_highlight'
-                        attrs="{'invisible': [('state', '=', 'confirm')]}"
+                        invisible="state == 'confirm'"
                         groups="ethics_purchase_request.group_request_user"/>
             </xpath>
 
@@ -156,32 +154,32 @@
             <xpath expr="//button[@name='action_submit_for_approver']" position="before">
                 <button name="action_waiting_for_audit"
                         string="Enviar a Auditoría" class="btn-primary" type="object"
-                        attrs="{'invisible': [('state', '!=', 'waiting_for_verifier')]}"
+                        invisible="state != 'waiting_for_verifier'"
                         groups="ethics_purchase_request.group_request_verifier"/>
             </xpath>
             <!-- Auditor envia al comprador -->
             <xpath expr="//button[@name='action_submit_for_approver']" position="before">
                 <button name="action_submit_for_audit"
                         string="Enviar a Compras" class="btn-primary" type="object"
-                        attrs="{'invisible': [('state', '!=', 'waiting_for_audit')]}"
+                        invisible="state != 'waiting_for_audit'"
                         groups="jobcostphasecat.group_request_auditor"
                         />
                 <button name="reject_audit_pr"
                         string="Rechazar por Auditoría" class="btn-primary" type="object"
-                        attrs="{'invisible': [('state', '!=', 'waiting_for_audit')]}"
+                        invisible="state != 'waiting_for_audit'"
                         groups="jobcostphasecat.group_request_auditor"/>
             </xpath>
             <!-- Comprador envia al gerente -->
             <xpath expr="//button[@name='action_submit_for_approver']" position="replace">
                 <button name="action_submit_for_approver"
                         string="Enviar a Aprobación" class="btn-primary" type="object"
-                        attrs="{'invisible': [('state', '!=', 'waiting_for_buyer')]}"
+                        invisible="state != 'waiting_for_buyer'"
                         groups="jobcostphasecat.group_request_buyer"/>
             </xpath>
             <xpath expr="//button[@name='reject_approver_pr']" position="replace">
                 <button name="reject_approver_pr"
                         string="Rechazar SdC" type="object" class='oe_highlight'
-                        attrs="{'invisible': [('state', '!=', 'waiting_for_buyer')]}"
+                        invisible="state != 'waiting_for_buyer'"
                         groups="jobcostphasecat.group_request_buyer"/>                        
             </xpath>
             <!-- Cambiar el campo vendor_ids; para que tambien el comprador pueda agregar los vendors-->
@@ -192,7 +190,7 @@
                     create="0"
                     can_create="false"
                     options="{'no_create': True, 'no_create_edit': True}"
-                    attrs="{'column_invisible': [('parent.state', 'not in', ['waiting_for_approver','confirm','waiting_for_buyer'])]}"/>
+                    column_invisible="parent.state not in ('waiting_for_approver','confirm','waiting_for_buyer')"/>
             </xpath>
 
         </field>
@@ -218,39 +216,33 @@
         <!-- Reemplazamos la pestaña "Request Lines" -->
         <xpath expr="//notebook/page[@name='request_lines']" position="replace">
             <page string="Products" name="products">
-                <field name="pr_lines" widget="section_and_note_one2many" mode="tree,kanban"
+                <field name="pr_lines" 
                     context="{'default_state': 'draft'}"
-                    attrs="{'readonly': [('state', 'in', ('confirm', 'cancel'))]}">
+                    readonly="state in ('confirm', 'cancel')">
                     
-                    <tree string="Purchase Request Lines" editable="bottom">
-                        <control>
-                            <create name="add_product_control" string="Add a product"/>
-                            <create name="add_section_control" string="Add a section" context="{'default_display_type': 'line_section'}"/>
-                            <create name="add_note_control" string="Add a note" context="{'default_display_type': 'line_note'}"/>
-                        </control>
+                    <list string="Purchase Request Lines" editable="bottom">
                         
                         <field name="display_type" invisible="1"/>
                         <field name="sequence" widget="handle"/>
                         <field name="state" invisible="1"/>
                         <field name="product_id" 
-                               attrs="{'readonly': [('state', 'not in', ('draft'))], 'required': [('display_type', '=', False)]}"
+                               readonly="state not in ('draft')" required="display_type == False"
                                domain="[('purchase_ok', '=', True), '|', ('company_id', '=', False), ('company_id', '=', parent.company_id)]"/>
                         <field name="name" widget="section_and_note_text"/>
                         <field name="product_qty"/>
                         <field name="product_uom"/>
-                        <field name="vendor_ids" widget="many2many_tags" 
-                               attrs="{'column_invisible': [('parent.state', 'not in', ['waiting_for_approver','confirm','waiting_for_buyer'])]}"/>
-                        <field name="price_unit" optional="hide"/>
-                        <field name="price_subtotal" optional="hide" widget="monetary"/>
-                        <field name="account_analytic_id" optional="show"/>
+                        <field name="vendor_ids" widget="many2many_tags"/>
+                        <field name="price_unit"/>
+                        <field name="price_subtotal" widget="monetary"/>
+                        <field name="account_analytic_id"/>
                         <field name="vehicle_id"/>
-                        <field name="phase_id" optional="show"/>
-                    </tree>
+                        <field name="phase_id"/>
+                    </list>
 
                     <form string="Purchase Request Line">
                         <field name="display_type" invisible="1"/>
                         
-                        <group attrs="{'invisible': [('display_type', '!=', False)]}">
+                        <group invisible="display_type != False">
                             <group>
                                 <field name="product_id" widget="many2one_barcode"
                                        domain="[('purchase_ok', '=', True), '|', ('company_id', '=', False), ('company_id', '=', parent.company_id)]"/>
@@ -261,76 +253,16 @@
                         </group>
 
                         <!-- NUEVO: Permitimos editar `vendor_ids` en las secciones y notas -->
-                        <group attrs="{'invisible': [('display_type', '=', False)]}">
-                            <label for="name" string="Section Name (eg. Products, Services)" attrs="{'invisible': [('display_type', '!=', 'line_section')]}"/>
-                            <label for="name" string="Note" attrs="{'invisible': [('display_type', '!=', 'line_note')]}"/>
+                        <group invisible="display_type == False">
+                            <label for="name" string="Section Name (eg. Products, Services)" invisible="display_type != 'line_section'"/>
+                            <label for="name" string="Note" invisible="display_type != 'line_note'"/>
                             
                             <field name="name" nolabel="1"/>
                             <field name="vendor_ids" widget="many2many_tags"/>
                         </group>
                     </form>
 
-                    <kanban>
-                        <field name="name"/>
-                        <field name="product_id"/>
-                        <field name="product_qty"/>
-                        <field name="product_uom"/>
-                        <field name="price_subtotal"/>
-                        <field name="price_unit"/>
-                        <field name="display_type"/>
-                        <field name="vendor_ids"/>
-                        <field name="account_analytic_id"/> 
-                        <field name="vehicle_id"/>
-                        <field name="phase_id"/>
-
-                        <templates>
-                            <t t-name="kanban-box">
-                                <div t-attf-class="oe_kanban_card {{ record.display_type.raw_value ? 'o_is_' + record.display_type.raw_value : '' }}">
-                                    <t t-if="!record.display_type.raw_value">
-                                        <div class="row">
-                                            <div class="col-8">
-                                                <strong>
-                                                    <span t-esc="record.product_id.value"/>
-                                                </strong>
-                                            </div>
-                                            <div class="col-4 text-end">
-                                                <strong>
-                                                    <span t-esc="record.price_subtotal.value"/>
-                                                </strong>
-                                            </div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-12 text-muted">
-                                                <span>
-                                                    Quantity:
-                                                    <t t-esc="record.product_qty.value"/>
-                                                    <t t-esc="record.product_uom.value"/>
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-12 text-muted">
-                                                <span>
-                                                    Unit Price:
-                                                    <t t-esc="record.price_unit.value"/>
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </t>
-
-                                    <!-- NUEVO: Mostramos `vendor_ids` en Secciones y Notas -->
-                                    <div t-elif="record.display_type.raw_value === 'line_section' || record.display_type.raw_value === 'line_note'" class="row">
-                                        <div class="col-8">
-                                            <span t-esc="record.name.value"/>
-                                        </div>
-                                        <div class="col-4">
-                                            <span t-esc="record.vendor_ids.value"/>
-                                        </div>
-                                    </div>
-                                </div>
-                            </t>
-                        </templates>
-                    </kanban>
+                    <!-- Vista kanban temporalmente eliminada para evitar problemas de renderizado -->
                 </field>
             </page>
         </xpath>
@@ -343,11 +275,11 @@
         <field name="name">fleet.vehicle.data.list</field>
         <field name="model">fleet.vehicle.data</field>
         <field name="arch" type="xml">
-            <tree string="Fleet Vehicle Data">
+            <list string="Fleet Vehicle Data">
                 <field name="vehicle_id"/>
                 <field name="name"/>
                 <field name="license_plate"/>
-            </tree>
+            </list>
         </field>
     </record>
 

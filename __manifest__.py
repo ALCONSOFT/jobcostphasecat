@@ -116,7 +116,9 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Job Cost',
-    'version': '2025.06.05 - 13:21',
+    'version': '18.0.25.7.16',
+    'subversion': '13.50',
+    'license': 'AGPL-3',
 
     # any module necessary for this one to work correctly
     'depends': ['bi_odoo_project_phases',
@@ -128,6 +130,7 @@
                 'purchase_order_general_discount',       # Modulo que agrega descuento general a la orden de compra
                 'account_fleet',                         # Modulo que agrega vehiculos a la factura
                 'email_template_qweb',                   # Modulo que permite ediar vistas de qweb para correos en templates
+                'eg_warehouse_restriction',             # Modulo que agrega restricciones de almacén por usuario
                 'product',
                 ],
 
@@ -171,4 +174,5 @@
     ],
     # Aplicacion:  si aparace cierto (true) esta modulo sera una aplicacion que aprecera en el listado de aplicaciones de odoo.
     'application': True,
+    'installable': True,
 }

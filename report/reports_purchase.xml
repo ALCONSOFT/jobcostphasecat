@@ -11,7 +11,7 @@
             <field name="inherit_id" ref="purchase.view_purchase_order_pivot"/>
             <field name="arch" type="xml">
                 <!-- Insertamos dentro del <pivot> -->
-                <xpath expr="//pivot" position="replace">
+                <xpath expr="//pivot" position="inside">
                     <field name="analytic_account_id" type="row"/>
                     <field name="vehicle_id" type="row"/>
                     <field name="phase_id" type="row"/>
@@ -40,7 +40,7 @@
             <field name="model">purchase.report</field>
             <field name="inherit_id" ref="purchase.purchase_report_view_tree"/>
             <field name="arch" type="xml">
-                <tree>
+                <xpath expr="//list" position="inside">
                     <field name="order_id" optional="show"/>
                     <field name="partner_id" optional="show"/>
                     <field name="product_id" optional="show"/>
@@ -49,7 +49,7 @@
                     <field name="analytic_account_id" optional="show"/>
                     <field name="vehicle_id" optional="show"/>
                     <field name="phase_id" optional="show"/>
-                </tree>
+                </xpath>
             </field>
         </record>
     <!-- Search View -->
@@ -80,7 +80,7 @@
 
                 <filter string="Confirmation Date Last Year" name="later_than_a_year_ago" domain="[('date_approve', '&gt;=', ((context_today()-relativedelta(years=1)).strftime('%Y-%m-%d')))]"/>
                 <filter name="filter_date_order" date="date_order"/>
-                <filter name="filter_date_approve" date="date_approve" default_period="this_month"/>
+                <filter name="filter_date_approve" date="date_approve"/>
                 <field name="partner_id"/>
                 <field name="product_id"/>
                 

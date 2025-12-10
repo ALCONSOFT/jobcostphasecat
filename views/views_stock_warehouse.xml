@@ -22,7 +22,7 @@
         <field name="model">stock.warehouse</field>
         <field name="inherit_id" ref="view_warehouse_tree"/>
         <field name="arch" type="xml">
-            <xpath expr="//tree" position="inside">
+            <xpath expr="//list" position="inside">
                 <field name="account_analytic_id"/>
             </xpath>
         </field>

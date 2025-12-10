@@ -45,7 +45,7 @@ class EthicsPurchaseRequest(models.Model):
 
     warehouse_id = fields.Many2one('stock.warehouse', string='Almacén',
         domain="[('company_id', '=', company_id)]", required=True, readonly=False)    
-    sequence_alter = fields.Char(string='Secuencia Alterna', readonly=True, index=True, rerquired=True)
+    sequence_alter = fields.Char(string='Secuencia Alterna', readonly=True, index=True, required=True)
     payment_term_id = fields.Many2one('account.payment.term', string='Payment Terms', tracking=True)
     #def _default_picking_type_id(self):
         #return self.env['stock.picking.type'].search([('warehouse_id.company_id', '=', self.env.company.id), ('code', '=', 'incoming')], limit=1)
@@ -521,6 +521,10 @@ class EthicsPuchasRequestLine(models.Model):
         compute="_compute_require_phase_id",
         store=False,
     )
+
+    def _compute_require_phase_id(self):
+        for record in self:
+            record.require_phase_id = self.env['ir.config_parameter'].sudo().get_param('jobcostphasecat.require_phase_id', 'False').lower() == 'true'
 
     @api.model_create_multi
     def create(self, vals_list):

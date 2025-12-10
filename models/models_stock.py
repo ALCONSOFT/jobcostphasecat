@@ -9,7 +9,7 @@ from odoo import api, fields, models, _, tools
 from odoo.osv import expression
 from odoo.tools import DEFAULT_SERVER_DATETIME_FORMAT
 from odoo.tools.float_utils import float_is_zero
-from odoo.exceptions import AccessError, UserError, ValidationError, ValidationError, Warning, RedirectWarning
+from odoo.exceptions import AccessError, UserError, ValidationError, ValidationError, RedirectWarning
 from odoo.tools.misc import formatLang, get_lang
 #from openerp import exceptions
 #import logging
@@ -34,7 +34,7 @@ class JC_PhaseProject(models.Model):
 from project_task_phase ptp inner join project_project pp 
 on ptp .project_id = pp.id 
 inner join account_analytic_account aaa 
-on pp.analytic_account_id = aaa.id
+on pp.account_id = aaa.id
 group by aaa.id, ptp."name", ptp.notes, ptp.company_id);
         """
         self.env.cr.execute(query)

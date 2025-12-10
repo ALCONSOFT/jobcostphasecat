@@ -106,7 +106,7 @@
             <field name="name">Purchase Request Kanban</field>
             <field name="type">ir.actions.act_window</field>
             <field name="res_model">purchase.request</field>
-            <field name="view_mode">kanban,tree,form</field>
+            <field name="view_mode">kanban,list,form</field>
             <field name="search_view_id" ref="ethics_purchase_request.view_purchase_request_search"/>
         </record>
 
@@ -119,7 +119,7 @@
         
         <!--
         <record id="jobcostpjasecat.action_purchase_request" model="ir.actions.act_window" inherit_id="ethics_purchase_request.action_purchase_request">
-            <field name="view_mode">tree,form,kanban</field>
+            <field name="view_mode">list,form,kanban</field>
             <field name="views" eval="[(5, 0, 0), (ref('ethics_purchase_request.view_purchase_request_tree'), 'tree'), (ref('ethics_purchase_request.view_purchase_request_form'), 'form'), (ref('jobcostpjasecat.view_purchase_request_kanban'), 'kanban')]"/>
         </record>
         -->

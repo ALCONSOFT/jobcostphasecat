@@ -5,19 +5,19 @@
       <field name="name">Categorias de Job Cost</field>
       <field name="model">project.category</field>
       <field name="arch" type="xml">
-        <tree>
+        <list>
           <field name="name"/>
           <field name="active"/>
           <field name="code_category"/>
           <field name="cost_type"/>
-        </tree>
+        </list>
       </field>
     </record>
     <!--ACCION DE VENTANA: Categorias-->
     <record model="ir.actions.act_window" id="jobcostphasecat.action_windows_categories">
       <field name="name">Mantenimiento de Categorías</field>
       <field name="res_model">project.category</field>
-      <field name="view_mode">tree,form</field>
+      <field name="view_mode">list,form</field>
     </record>
 
     <!--ELEMENTO DE MENU: Lista de Categorias-->
