@@ -1,5 +1,19 @@
 <odoo>
     <data>
+        <!-- 2026-01-30: Restringir picking_type_id a tipos de Recepción (no Devolución) -->
+        <record id="purchase_order_form_picking_type_restriction" model="ir.ui.view">
+            <field name="name">purchase.order.form.picking.type.restriction</field>
+            <field name="model">purchase.order</field>
+            <field name="inherit_id" ref="purchase_stock.purchase_order_view_form_inherit"/>
+            <field name="priority">100</field>
+            <field name="arch" type="xml">
+                <!-- Modificar domain para excluir tipos de Devolución (solo mostrar Recepciones) -->
+                <xpath expr="//field[@name='picking_type_id']" position="attributes">
+                    <attribute name="domain">[('code', '=', 'incoming'), ('return_picking_type_id', '!=', False), '|', ('warehouse_id', '=', False), ('warehouse_id.company_id', '=', company_id)]</attribute>
+                </xpath>
+            </field>
+        </record>
+
         <!-- Heredar la vista tree de purchase.order sdp-->
         <record id="purchase_order_inherit_purchase_order_tree" model="ir.ui.view">
             <field name="name">purchase.order.inherit.purchase.order.tree</field>

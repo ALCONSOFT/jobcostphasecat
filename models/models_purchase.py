@@ -6,6 +6,30 @@ from itertools import groupby
 class PurchaseOrder(models.Model):
     _inherit = 'purchase.order'
 
+    # 2026-01-30: Validar que el tipo de operación sea recepción, no devolución
+    @api.constrains('picking_type_id')
+    def _check_picking_type_is_reception(self):
+        """
+        Asegurar que las órdenes de compra usen tipos de operación de Recepción,
+        no de Devolución. Los tipos de recepción tienen return_picking_type_id definido.
+        """
+        for order in self:
+            if order.picking_type_id and order.picking_type_id.code == 'incoming':
+                # Si el tipo NO tiene return_picking_type_id, es una devolución
+                if not order.picking_type_id.return_picking_type_id:
+                    # Obtener el tipo de recepción correcto del almacén
+                    warehouse = order.picking_type_id.warehouse_id
+                    correct_type = warehouse.in_type_id if warehouse else False
+                    raise UserError(_(
+                        '¡TIPO DE OPERACIÓN INCORRECTO!\n\n'
+                        'La orden de compra %(order)s tiene asignado el tipo "%(wrong_type)s" '
+                        'que está destinado para DEVOLUCIONES de clientes, no para recepciones de compra.\n\n'
+                        'Por favor seleccione el tipo de operación correcto: "%(correct_type)s"',
+                        order=order.name,
+                        wrong_type=order.picking_type_id.name,
+                        correct_type=correct_type.name if correct_type else 'Recepciones del almacén'
+                    ))
+
     # Agregando estado: "cerrado "al campo: invoice_status (estado de facturación)
     invoice_status = fields.Selection([
         ('no', 'Nothing to Bill'),

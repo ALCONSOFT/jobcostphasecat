@@ -244,6 +244,7 @@
                 'stock_analytic',
                 'ethics_purchase_request',
                 'purchase',
+                'purchase_stock',  # 2026-01-30: Necesario para heredar vista de picking_type_id
                 'purchase_discount',
                 'purchase_order_supplierinfo_update',    # Modulo que actualiza la información del precio del proveedor en la orden de compra
                 'purchase_order_general_discount',       # Modulo que agrega descuento general a la orden de compra

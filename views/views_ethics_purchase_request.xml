@@ -88,7 +88,7 @@
         <field name="inherit_id" ref="ethics_purchase_request.view_purchase_request_form"/>
         <field name="arch" type="xml">
             <field name="request_responsible" position="after">
-                <field name="picking_type_id" string="Entregar a Almacén:" domain="[('code', '=', 'incoming')]"/>
+                <field name="picking_type_id" string="Entregar a Almacén:" domain="[('code', '=', 'incoming'), ('return_picking_type_id', '!=', False)]"/>
                 <field name="vehicle_id" optional="show"/>
                 <field name="account_analytic_id" optional="show"/>
             </field>
