@@ -87,7 +87,16 @@
         </record> 
         <!-- ***********************************************-->
     <!--================================================================-->
-    <!--  Grupo para permitir “Doble Transferencia Interna”              -->
+    <!--  Grupo para permitir cambiar Tipo de Operación en Compras       -->
+    <!--================================================================-->
+        <record id="group_change_picking_type" model="res.groups">
+            <field name="name">Cambiar Tipo de Operación en Compras</field>
+            <field name="category_id" ref="module_category_rfq"/>
+            <field name="comment">Permite cambiar el tipo de operación (picking_type_id) en órdenes de compra. Sin este permiso, el campo es de solo lectura después de la creación.</field>
+        </record>
+
+    <!--================================================================-->
+    <!--  Grupo para permitir "Doble Transferencia Interna"              -->
     <!--================================================================-->
         <record id="group_double_internal_transfer" model="res.groups">
             <!-- Este será el nombre que veremos en Ajustes → Usuarios & Compañías → Grupos -->

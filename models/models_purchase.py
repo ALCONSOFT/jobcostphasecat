@@ -6,6 +6,41 @@ from itertools import groupby
 class PurchaseOrder(models.Model):
     _inherit = 'purchase.order'
 
+    # 2026-01-30: Agregar tracking al campo picking_type_id
+    picking_type_id = fields.Many2one(
+        'stock.picking.type',
+        tracking=True,  # Registrar cambios en el historial
+    )
+
+    def write(self, vals):
+        """
+        2026-01-30: Controlar quién puede cambiar el tipo de operación.
+        Solo usuarios con el grupo 'group_change_picking_type' pueden modificarlo
+        si la restricción está habilitada en configuración.
+        """
+        if 'picking_type_id' in vals:
+            # Verificar si la restricción está habilitada
+            restrict = self.env['ir.config_parameter'].sudo().get_param(
+                'jobcostphasecat.restrict_picking_type_change', 'False'
+            ).lower() == 'true'
+
+            if restrict:
+                # Verificar si el usuario tiene el permiso
+                has_permission = self.env.user.has_group('jobcostphasecat.group_change_picking_type')
+
+                if not has_permission:
+                    # Verificar si realmente está cambiando el valor (no solo asignando el mismo)
+                    for order in self:
+                        if order.picking_type_id.id != vals['picking_type_id']:
+                            raise UserError(_(
+                                '¡PERMISO DENEGADO!\n\n'
+                                'No tiene autorización para cambiar el Tipo de Operación '
+                                '(Entregar a) en las órdenes de compra.\n\n'
+                                'Contacte al administrador si necesita este permiso.'
+                            ))
+
+        return super(PurchaseOrder, self).write(vals)
+
     # 2026-01-30: Validar que el tipo de operación sea recepción, no devolución
     @api.constrains('picking_type_id')
     def _check_picking_type_is_reception(self):

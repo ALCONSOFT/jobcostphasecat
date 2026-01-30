@@ -31,6 +31,15 @@ class ResConfigSettings(models.TransientModel):
         help='Si está habilitado, permite duplicar transferencias estado plantilla en el sistema'
     )
 
+    # 2026-01-30: Restricción de cambio de tipo de operación
+    restrict_picking_type_change = fields.Boolean(
+        string='Restringir Cambio de Tipo de Operación',
+        config_parameter='jobcostphasecat.restrict_picking_type_change',
+        default=False,
+        help='Si está habilitado, solo usuarios con el permiso "Cambiar Tipo de Operación en Compras" '
+             'pueden modificar el campo Tipo de Operación (Entregar a) en las órdenes de compra.'
+    )
+
     # Control de Stock Negativo
     enable_negative_stock_control = fields.Boolean(
         string='Controlar Stock Negativo en Salidas',

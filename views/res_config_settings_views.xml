@@ -46,6 +46,19 @@
                 </div>
               </div>
             </div>
+            <!-- Restringir cambio de tipo de operación -->
+            <div class="col-12 col-lg-6 o_setting_box">
+              <div class="o_setting_left_pane">
+                <field name="restrict_picking_type_change"/>
+              </div>
+              <div class="o_setting_right_pane">
+                <label for="restrict_picking_type_change"/>
+                <div class="text-muted">
+                  Restringir cambio de Tipo de Operación (Entregar a) en órdenes de compra.
+                  Solo usuarios con el permiso "Cambiar Tipo de Operación en Compras" podrán modificarlo.
+                </div>
+              </div>
+            </div>
             <!-- Permitir duplicar transferencias solo en plantilla -->
             <div class="col-12 col-lg-6 o_setting_box">
               <div class="o_setting_left_pane">
@@ -54,7 +67,7 @@
               <div class="o_setting_right_pane">
                 <label for="allow_transfer_duplication"/>
                 <div class="text-muted">
-                  Permitir duplicar transferencias solo en estado “Plantilla”
+                  Permitir duplicar transferencias solo en estado "Plantilla"
                 </div>
                 <div class="executive-summary">
                 <ul>
