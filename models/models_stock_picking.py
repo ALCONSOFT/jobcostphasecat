@@ -140,23 +140,16 @@ class ZZ_StockPicking(models.Model):
             return super(ZZ_StockPicking, self).action_assign()
 
         # 3. Obtener configuración de almacenes y usuarios permitidos
-        allowed_warehouse_ids = self.env['ir.config_parameter'].sudo().get_param(
-            'jobcostphasecat.allowed_negative_stock_warehouse_ids',
-            '[]'
+        allowed_warehouse_ids_str = self.env['ir.config_parameter'].sudo().get_param(
+            'jobcostphasecat.allowed_negative_stock_warehouse_ids', ''
         )
-        allowed_user_ids = self.env['ir.config_parameter'].sudo().get_param(
-            'jobcostphasecat.allowed_negative_stock_user_ids',
-            '[]'
+        allowed_user_ids_str = self.env['ir.config_parameter'].sudo().get_param(
+            'jobcostphasecat.allowed_negative_stock_user_ids', ''
         )
 
-        # Convertir strings a listas de IDs
-        import ast
-        try:
-            allowed_warehouse_ids = ast.literal_eval(allowed_warehouse_ids) if allowed_warehouse_ids else []
-            allowed_user_ids = ast.literal_eval(allowed_user_ids) if allowed_user_ids else []
-        except:
-            allowed_warehouse_ids = []
-            allowed_user_ids = []
+        # Convertir strings comma-separated a listas de IDs
+        allowed_warehouse_ids = [int(x) for x in allowed_warehouse_ids_str.split(',') if x.strip().isdigit()]
+        allowed_user_ids = [int(x) for x in allowed_user_ids_str.split(',') if x.strip().isdigit()]
 
         # 4. Verificar EXCEPCIONES (almacén o usuario permitido)
         warehouse = self.picking_type_id.warehouse_id
@@ -318,23 +311,16 @@ class ZZ_StockPicking(models.Model):
                 continue
 
             # 3. Obtener configuración de almacenes y usuarios permitidos
-            allowed_warehouse_ids = self.env['ir.config_parameter'].sudo().get_param(
-                'jobcostphasecat.allowed_negative_stock_warehouse_ids',
-                '[]'
+            allowed_warehouse_ids_str = self.env['ir.config_parameter'].sudo().get_param(
+                'jobcostphasecat.allowed_negative_stock_warehouse_ids', ''
             )
-            allowed_user_ids = self.env['ir.config_parameter'].sudo().get_param(
-                'jobcostphasecat.allowed_negative_stock_user_ids',
-                '[]'
+            allowed_user_ids_str = self.env['ir.config_parameter'].sudo().get_param(
+                'jobcostphasecat.allowed_negative_stock_user_ids', ''
             )
 
-            # Convertir strings a listas de IDs
-            import ast
-            try:
-                allowed_warehouse_ids = ast.literal_eval(allowed_warehouse_ids) if allowed_warehouse_ids else []
-                allowed_user_ids = ast.literal_eval(allowed_user_ids) if allowed_user_ids else []
-            except:
-                allowed_warehouse_ids = []
-                allowed_user_ids = []
+            # Convertir strings comma-separated a listas de IDs
+            allowed_warehouse_ids = [int(x) for x in allowed_warehouse_ids_str.split(',') if x.strip().isdigit()]
+            allowed_user_ids = [int(x) for x in allowed_user_ids_str.split(',') if x.strip().isdigit()]
 
             # 4. Verificar EXCEPCIONES (almacén o usuario permitido)
             warehouse = picking.picking_type_id.warehouse_id

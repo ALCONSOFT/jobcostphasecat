@@ -55,7 +55,17 @@
                 <label for="restrict_picking_type_change"/>
                 <div class="text-muted">
                   Restringir cambio de Tipo de Operación (Entregar a) en órdenes de compra.
-                  Solo usuarios con el permiso "Cambiar Tipo de Operación en Compras" podrán modificarlo.
+                </div>
+                <!-- Usuarios autorizados (visible solo si restricción habilitada) -->
+                <div attrs="{'invisible': [('restrict_picking_type_change', '=', False)]}" class="mt-3">
+                  <label for="picking_type_change_user_ids" string="Usuarios Autorizados"/>
+                  <div class="text-muted mb-2">
+                    Usuarios que pueden cambiar el Tipo de Operación en órdenes de compra.
+                  </div>
+                  <field name="picking_type_change_user_ids"
+                         widget="many2many_tags"
+                         placeholder="Seleccionar usuarios..."
+                         options="{'no_create': True}"/>
                 </div>
               </div>
             </div>
