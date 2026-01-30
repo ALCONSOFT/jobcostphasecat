@@ -293,6 +293,128 @@ class ZZ_StockPicking(models.Model):
         # 6. Si todo está OK, continuar con la reserva de stock normal
         return super(ZZ_StockPicking, self).action_assign()
 
+    # Alconor: 30-ene-2026: Control de Stock Negativo también en button_validate
+    def button_validate(self):
+        """
+        Override del método button_validate para controlar stock negativo al VALIDAR.
+
+        Este control es ADICIONAL al de action_assign() para asegurar que no se
+        pueda validar una transferencia que cause stock negativo, incluso si el
+        usuario saltó el paso de "Comprobar Disponibilidad".
+        """
+        # 1. Verificar si el control está habilitado
+        control_enabled = self.env['ir.config_parameter'].sudo().get_param(
+            'jobcostphasecat.enable_negative_stock_control',
+            'False'
+        ).lower() == 'true'
+
+        # Si control deshabilitado → comportamiento Odoo estándar
+        if not control_enabled:
+            return super(ZZ_StockPicking, self).button_validate()
+
+        # 2. Solo validar en transferencias de SALIDA
+        for picking in self:
+            if picking.picking_type_id.code != 'outgoing':
+                continue
+
+            # 3. Obtener configuración de almacenes y usuarios permitidos
+            allowed_warehouse_ids = self.env['ir.config_parameter'].sudo().get_param(
+                'jobcostphasecat.allowed_negative_stock_warehouse_ids',
+                '[]'
+            )
+            allowed_user_ids = self.env['ir.config_parameter'].sudo().get_param(
+                'jobcostphasecat.allowed_negative_stock_user_ids',
+                '[]'
+            )
+
+            # Convertir strings a listas de IDs
+            import ast
+            try:
+                allowed_warehouse_ids = ast.literal_eval(allowed_warehouse_ids) if allowed_warehouse_ids else []
+                allowed_user_ids = ast.literal_eval(allowed_user_ids) if allowed_user_ids else []
+            except:
+                allowed_warehouse_ids = []
+                allowed_user_ids = []
+
+            # 4. Verificar EXCEPCIONES (almacén o usuario permitido)
+            warehouse = picking.picking_type_id.warehouse_id
+            current_user = self.env.user
+
+            # EXCEPCIÓN 1: El almacén está en la lista de permitidos
+            if warehouse.id in allowed_warehouse_ids:
+                continue
+
+            # EXCEPCIÓN 2: El usuario está en la lista de autorizados
+            if current_user.id in allowed_user_ids:
+                continue
+
+            # 5. VALIDAR STOCK - Verificar que no cause stock negativo
+            import logging
+            _logger = logging.getLogger(__name__)
+
+            for move in picking.move_ids:
+                if move.state in ('done', 'cancel'):
+                    continue
+
+                # Usar quantity_done si está definido, sino product_uom_qty
+                cantidad_a_mover = move.quantity_done if move.quantity_done > 0 else move.product_uom_qty
+                if cantidad_a_mover <= 0:
+                    continue
+
+                # SOLO validar ubicaciones INTERNAS
+                if move.location_id.usage != 'internal':
+                    continue
+
+                # Obtener stock actual
+                quants = self.env['stock.quant'].search([
+                    ('product_id', '=', move.product_id.id),
+                    ('location_id', '=', move.location_id.id)
+                ])
+                stock_actual = sum(quants.mapped('quantity'))
+
+                _logger.info("=== VALIDACION STOCK NEGATIVO (Validar Transferencia) ===")
+                _logger.info("Transferencia: %s", picking.name)
+                _logger.info("Producto: %s", move.product_id.display_name)
+                _logger.info("Stock Actual: %s", stock_actual)
+                _logger.info("Cantidad a Mover: %s", cantidad_a_mover)
+
+                # VALIDAR: Si la salida causaría stock negativo → ERROR
+                if cantidad_a_mover > stock_actual:
+                    error_msg = _(
+                        '¡STOCK INSUFICIENTE!\n\n'
+                        'No se puede validar esta transferencia porque causaría stock negativo.\n\n'
+                        'Producto: %s\n'
+                        'Ubicación: %s\n\n'
+                        'Stock Actual:    %10.2f %s\n'
+                        'Cantidad Salida: %10.2f %s\n'
+                        '─────────────────────────────\n'
+                        'Stock Resultante: %10.2f %s (NEGATIVO)\n\n'
+                        'OPCIONES:\n'
+                        '• Reducir la cantidad a mover a máximo %.2f %s\n'
+                        '• Esperar una recepción del producto\n'
+                        '• Solicitar autorización al administrador\n\n'
+                        'NOTA: Solo almacenes y usuarios autorizados pueden hacer\n'
+                        'salidas que resulten en stock negativo.'
+                    ) % (
+                        move.product_id.display_name,
+                        move.location_id.complete_name,
+                        stock_actual,
+                        move.product_uom.name,
+                        cantidad_a_mover,
+                        move.product_uom.name,
+                        stock_actual - cantidad_a_mover,
+                        move.product_uom.name,
+                        stock_actual,
+                        move.product_uom.name,
+                    )
+                    _logger.error("=== BLOQUEANDO VALIDACIÓN POR STOCK INSUFICIENTE ===")
+                    _logger.error("Stock: %s | Cantidad: %s | Resultaría: %s",
+                                  stock_actual, cantidad_a_mover, stock_actual - cantidad_a_mover)
+                    raise UserError(error_msg)
+
+        # 6. Si todo está OK, continuar con la validación normal
+        return super(ZZ_StockPicking, self).button_validate()
+
 class JC_closed_date_transference(models.Model):
     _name = 'stock.picking.closed'
 
