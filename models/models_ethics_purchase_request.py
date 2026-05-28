@@ -580,28 +580,31 @@ class EthicsPurchaseRequest(models.Model):
         warehouse = self.env['stock.warehouse'].browse(warehouse_id)
         cr = self.env.cr
         if warehouse.code:
-            # Si el almacén tiene código
-            cadena_sql = """SELECT MAX(sequence_alter) FROM public.purchase_request
-                            WHERE LENGTH(substring(sequence_alter from 1 for %(len)s)) = 1
-                            AND substring(sequence_alter from 1 for %(len)s) = %(code)s;"""
-            cr.execute(cadena_sql, {'len': len(warehouse.code), 'code': warehouse.code})
-            result = cr.fetchone()
+            # Aislamos sequence_alter EXACTAMENTE '<code><N dígitos>' para no
+            # cruzar códigos cuyo prefijo se solape (ej. 'A' vs 'AT', 'B' vs 'BT',
+            # 'T' vs 'TEST'). Fix TKS-C030-2026-011 (Uriel — UnboundLocalError).
             import re
+            cadena_sql = """SELECT MAX(sequence_alter) FROM public.purchase_request
+                            WHERE sequence_alter ~ %(regex)s;"""
+            cr.execute(cadena_sql, {
+                'regex': '^' + re.escape(warehouse.code) + r'[0-9]+$',
+            })
+            result = cr.fetchone()
             if result and result[0] is not None:
-                # Buscar la porción numérica después del código
-                match = re.search(f'{re.escape(warehouse.code)}(\\d+)', result[0])
+                match = re.search(
+                    r'^' + re.escape(warehouse.code) + r'(\d+)$',
+                    result[0],
+                )
                 if match:
-                    numeric_part = match.group(1)  # Extrae la porción numérica
-                # Incrementar la secuencia o realizar el ajuste necesario aquí
-                # Por ejemplo, si la secuencia es un número, podrías intentar extraer la parte numérica y incrementarla
-                # Asegúrate de ajustar esta parte según cómo necesitas que funcione la secuencia.
-                next_sequence = str(int(numeric_part) + 1).zfill(5)
-                sequence = f"{warehouse.code}{next_sequence}"
+                    numeric_part = match.group(1)
+                    next_sequence = str(int(numeric_part) + 1).zfill(5)
+                    sequence = f"{warehouse.code}{next_sequence}"
+                else:
+                    # Defensivo: con el SQL anclado el regex siempre debería matchear.
+                    sequence = f"{warehouse.code}00001"
             else:
-                # Definir una secuencia inicial o manejar el caso de no resultado
-                sequence = f"{warehouse.code}00001"  # Asumiendo que quieres empezar desde aquí
+                sequence = f"{warehouse.code}00001"
         else:
-            # No tiene código el almacén
             sequence = None
         return sequence
     
